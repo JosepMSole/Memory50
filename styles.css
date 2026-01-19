@@ -337,6 +337,24 @@ main{padding:16px}
   overflow:hidden;
 }
 
+/* Smartphone menu background fallback (no video) */
+body.isMobile .menuVideo{display:none;}
+body.isMobile .menu::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  background:center/cover no-repeat url("assets/memory50_framebgmenu.jpg");
+  transform:scale(1.08);
+  filter:contrast(1.05) saturate(1.05);
+  animation:mobileMenuBg 6.5s ease-in-out infinite;
+}
+@keyframes mobileMenuBg{
+  0%{transform:scale(1.10) translate3d(0,0,0); filter:contrast(1.06) saturate(1.06) brightness(.95);} 
+  45%{transform:scale(1.16) translate3d(-1.2%, -1.4%,0); filter:contrast(1.07) saturate(1.07) brightness(1);} 
+  100%{transform:scale(1.10) translate3d(0,0,0); filter:contrast(1.06) saturate(1.06) brightness(.95);} 
+}
+
 .menuVideo{
   position:absolute;
   inset:0;
@@ -736,6 +754,30 @@ main{padding-bottom:120px}
   background:radial-gradient(circle at 50% 35%, rgba(0,0,0,.15), rgba(0,0,0,.75) 70%);
 }
 .introGate.isPlaying::before{background:radial-gradient(circle at 50% 35%, rgba(0,0,0,.05), rgba(0,0,0,.55) 70%);}
+
+/* Smartphone intro fallback (2s full-screen image animation)
+   - Activated by JS adding .isActive to #introMobileFrame and body.isMobile.
+*/
+.introMobileFrame{
+  position:absolute;
+  inset:0;
+  z-index:3;
+  opacity:0;
+  pointer-events:none;
+  background:center/cover no-repeat url("assets/disturbinggames_frameintro.jpg");
+  transform:scale(1.06);
+  filter:contrast(1.08) saturate(1.05);
+}
+body.isMobile .introVideo{display:none;}
+body.isMobile .introMobileFrame.isActive{
+  opacity:1;
+  animation:mobileIntro 2s ease-out forwards;
+}
+@keyframes mobileIntro{
+  0%{transform:scale(1.10); filter:contrast(1.10) saturate(1.10) brightness(.9);}
+  60%{transform:scale(1.04); filter:contrast(1.08) saturate(1.06) brightness(1);}
+  100%{transform:scale(1.00); filter:contrast(1.05) saturate(1.04) brightness(1);}
+}
 
 /* Menu video overlays */
 .menuVignette{

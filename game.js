@@ -14,6 +14,7 @@ const menuBtn = document.getElementById('menuBtn');
 const introGate = document.getElementById('introGate');
 const introStartBtn = document.getElementById('introStartBtn');
 const introVideo = document.getElementById('introVideo');
+const introMobileFrame = document.getElementById('introMobileFrame');
 
 // Menu background video
 const menuVideo = document.getElementById('menuVideo');
@@ -53,6 +54,25 @@ const finalMessage = document.getElementById('finalMessage');
 const totalTimeEl = document.getElementById('totalTime');
 
 const SECRET_GIFT_LINK = 'https://www.disturbingstories.com/083_8u8w.html';
+
+// ---------------------------
+// Device detection (smartphone)
+// ---------------------------
+function detectSmartphone() {
+  // Heuristica simple y estable: pantalla pequena + puntero "coarse".
+  // Evitamos depender solo del userAgent.
+  try {
+    const small = window.matchMedia('(max-width: 900px)').matches;
+    const coarse = window.matchMedia('(pointer: coarse)').matches;
+    const touch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    return (small && (coarse || touch));
+  } catch (_) {
+    return false;
+  }
+}
+
+const isSmartphone = detectSmartphone();
+try { document.body.classList.toggle('isMobile', isSmartphone); } catch (_) {}
 
 
 function openSecretGift(){
@@ -602,6 +622,32 @@ function hideIntroGate() {
 }
 
 function startIntroPlayback() {
+  // Medida drastica (smartphone): NO reproducimos el videointro.
+  // En su lugar, mostramos una animacion de 2s a pantalla completa.
+  if (isSmartphone) {
+    tryStartAudio();
+    stopAllBgm();
+    try { introGate?.classList.add('isPlaying'); } catch (_) {}
+    if (introMobileFrame) {
+      try {
+        introMobileFrame.classList.add('isActive');
+        introMobileFrame.setAttribute('aria-hidden', 'false');
+      } catch (_) {}
+    }
+
+    // Tras 2s, pasamos al menu.
+    window.setTimeout(() => {
+      try {
+        introMobileFrame?.classList.remove('isActive');
+        introMobileFrame?.setAttribute('aria-hidden', 'true');
+        introGate?.classList.remove('isPlaying');
+      } catch (_) {}
+      hideIntroGate();
+      showMenu();
+    }, 2000);
+    return;
+  }
+
   if (!introVideo) {
     // Fallback: if no video, just go to menu
     hideIntroGate();
@@ -678,12 +724,17 @@ function showMenu() {
   menu.style.display = 'flex';
   document.body.classList.add('hasMenu');
 
-  // Menu soundtrack + menu bg video
+  // Menu soundtrack + menu bg video (desktop). En smartphone no usamos video.
   playMenuMusic();
   try {
     if (menuVideo) {
       menuVideo.muted = true;
-      menuVideo.play().catch(() => {});
+      if (!isSmartphone) {
+        menuVideo.play().catch(() => {});
+      } else {
+        // Aseguramos que quede parado para evitar estados "loading".
+        menuVideo.pause();
+      }
     }
   } catch (_) {}
 

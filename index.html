@@ -23,6 +23,8 @@
         <button id="introStartBtn" type="button" class="btn btnBig btnGold">INICIAR</button>
         <div id="introHint" class="introHint">(El video no se puede omitir)</div>
       </div>
+      <!-- Smartphone fallback: 2s full-screen image animation (no video) -->
+      <div id="introMobileFrame" class="introMobileFrame" aria-hidden="true"></div>
       <video id="introVideo" class="introVideo" preload="auto" playsinline>
         <!-- Preferimos WebM (desktop). MP4 queda como fallback (iOS/Safari). -->
         <source src="assets/introdisturbinggames.webm" type="video/webm" /></video>
