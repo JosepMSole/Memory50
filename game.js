@@ -1147,8 +1147,69 @@ async function init() {
   ready = false;
   playing = false;
   setStatus('');
-  setMenuStatus('Buscando imágenes y fondos en /assets...');
+  setMenuStatus('Cargando...');
   clearBoard();
+
+  // ---------------------------------------------------------------------
+  // Smartphone optimizations
+  //
+  // The original startup sequence scans hundreds of possible filenames
+  // (001..300, bg01..bg60, music/sfx ranges) by trying to load them.
+  // On desktop this is ok, but on many smartphones it causes long stalls
+  // (image decode contention + network queue), which delays the intro/menu
+  // and makes the whole experience feel extremely slow.
+  //
+  // For smartphone we assume a standard pack exists:
+  //   - assets/001.jpg .. assets/050.jpg
+  //   - assets/bg01.jpg .. assets/bg10.jpg (if present)
+  // and skip expensive scans. If some assets are missing, the game will
+  // still run; missing images will simply fail to render.
+  // ---------------------------------------------------------------------
+  if (isSmartphone) {
+    try {
+      allImages = Array.from({ length: MAX_IMAGES }, (_, i) => `assets/${pad3(i + 1)}.jpg`);
+      availableBgs = Array.from({ length: LEVELS }, (_, i) => `assets/bg${pad2(i + 1)}.jpg`);
+      successSounds = [COMPLETE_SFX_ALWAYS];
+      gameMusicTracks = [];
+
+      // Prepare pool & level chunks.
+      const img050 = allImages.find((s) => codeFromSrc(s) === '050') || null;
+      const others = allImages.filter((s) => codeFromSrc(s) !== '050');
+      const base = others.slice(0, Math.min(MAX_IMAGES - (img050 ? 1 : 0), others.length));
+      gamePool = img050 ? [...base, img050] : base.slice(0, Math.min(MAX_IMAGES, base.length));
+      unlockedSet = new Set();
+      completedAll = false;
+      playing = false;
+      levelPools = chunk(gamePool.slice(0, LEVELS * PAIRS_PER_LEVEL), PAIRS_PER_LEVEL);
+
+      // Set level backgrounds, but don't validate existence (avoid loads).
+      levelBgs = availableBgs.slice(0, LEVELS);
+      const bg0 = levelBgs[0];
+      if (bg0) document.documentElement.style.setProperty('--levelBg', `url('${bg0}')`);
+
+      ready = true;
+      if (playBtn) playBtn.disabled = false;
+      if (muralBtn) muralBtn.disabled = false;
+      if (secretBtn) secretBtn.style.display = isCompletedAll() ? '' : 'none';
+      setMenuStatus('© Disturbing Stories 2026 / Vianda Visual / disturbingstories.com/games');
+      hud.classList.remove('isLoading');
+
+      // Disable particles on smartphone (performance).
+      try {
+        if (particlesCanvas) particlesCanvas.style.display = 'none';
+      } catch (_) {}
+
+      // Show intro gate immediately.
+      showIntroGate();
+      return;
+    } catch (err) {
+      console.error(err);
+      setMenuStatus('Error cargando recursos.');
+      hud.classList.remove('isLoading');
+      showIntroGate();
+      return;
+    }
+  }
 
   try {
     // Detect images + backgrounds in parallel

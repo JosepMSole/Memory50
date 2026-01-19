@@ -23,6 +23,26 @@ body{
   overflow-x:hidden;
 }
 
+/* ------------------------------
+   Smartphone performance/layout
+   ------------------------------ */
+body.isMobile{
+  -webkit-text-size-adjust:100%;
+}
+body.isMobile:not(.hasMenu){
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+/* Mobile: remove heavy blur + endless drift animation */
+body.isMobile::before{
+  filter:saturate(1.02) contrast(1.08) brightness(.46);
+  animation:none;
+  will-change:auto;
+}
+body.isMobile::after{opacity:.45}
+body.isMobile .grunge{opacity:.18;filter:none}
+body.isMobile .particles{display:none}
+
 /* Level background + sci‑fi horror mood */
 body::before{
   content:"";
@@ -226,6 +246,18 @@ main{padding:16px}
   .board{grid-template-columns:repeat(3, minmax(0, 1fr))}
 }
 
+/* Mobile: fit the whole 10-card board on screen (5x2) */
+body.isMobile main{padding:10px 10px 6px}
+body.isMobile .status{padding:8px 10px 0 10px;font-size:14px}
+body.isMobile .hud{padding:10px 12px}
+body.isMobile .hudLeft .meta{font-size:14px;gap:8px}
+body.isMobile .board{
+  grid-template-columns:repeat(5, minmax(0, 1fr));
+  gap:6px;
+  max-width:100%;
+}
+body.isMobile .cardFace{box-shadow:none}
+
 .card{
   position:relative;
   width:100%;
@@ -293,6 +325,10 @@ main{padding:16px}
   opacity:0;
   animation:matchHalo 1s ease-out;
 }
+
+/* Mobile: disable heavy match glow for smooth gameplay */
+body.isMobile .card.matchGlow::after{display:none}
+body.isMobile .card.matchGlow .cardFace{animation:none}
 
 .card.matchGlow .cardFace{
   animation:matchGlow 1s ease-out;
@@ -567,6 +603,10 @@ body.isMobile .menu::before{
 }
 .bottomControls .btn{pointer-events:auto}
 
+/* Mobile: keep controls on screen (no overlap with footer) */
+body.isMobile .bottomControls{bottom:12px;padding:8px 10px;gap:8px}
+body.isMobile .btn{padding:9px 11px;border-radius:12px}
+
 /* Level complete overlay */
 .completeOverlay{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;padding:22px}
 .completeOverlay.isOpen{display:flex}
@@ -636,6 +676,10 @@ body.isMobile .menu::before{
 /* Keep content above footer */
 main{padding-bottom:120px}
 
+/* Mobile: avoid vertical scroll while playing */
+body.isMobile:not(.hasMenu) .footer{display:none}
+body.isMobile:not(.hasMenu) main{padding-bottom:18px}
+
 /* Timer */
 .timerWrap{
   width:100%;
@@ -657,6 +701,18 @@ main{padding-bottom:120px}
   box-shadow:0 10px 30px rgba(0,0,0,.35);
   transform:translateZ(0);
 }
+
+body.isMobile .timerWrap{padding:6px 10px 4px}
+body.isMobile .timer{
+  font-size:clamp(24px, 6vw, 36px);
+  padding:6px 12px;
+  box-shadow:none;
+  text-shadow:none;
+  backdrop-filter:none;
+}
+
+/* Mobile: lighter timer */
+body.isMobile .timer{font-size:clamp(26px, 6vw, 40px);box-shadow:none}
 .timer.isTick{
   animation:timerTick 140ms ease-out;
 }
