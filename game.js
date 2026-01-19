@@ -613,22 +613,51 @@ function startIntroPlayback() {
   tryStartAudio();
   stopAllBgm();
   try { introGate?.classList.add("isPlaying"); } catch (_) {}
-  try { introVideo.muted = false; } catch (_) {}
+  // En moviles (especialmente iOS), a veces es mas fiable iniciar el video en mute
+  // y desmutear justo despues de empezar.
+  try { introVideo.muted = true; } catch (_) {}
 
   try {
     introVideo.currentTime = 0;
   } catch (_) {}
 
   applyVolumeTo(introVideo);
-  try {
-    introVideo.play().catch(() => {
-      // If playback fails for any reason, still allow the user into the menu
-      hideIntroGate();
-      showMenu();
-    });
-  } catch (_) {
+
+  // Watchdog: si el video no llega a reproducirse (codec no soportado, etc.),
+  // no bloqueamos al usuario en la pantalla de inicio.
+  let cleared = false;
+  const clearWatchdog = () => {
+    if (cleared) return;
+    cleared = true;
+    try { introVideo.removeEventListener('playing', clearWatchdog); } catch (_) {}
+    try { introVideo.removeEventListener('error', onErr); } catch (_) {}
+    if (watchdog) window.clearTimeout(watchdog);
+  };
+  const onErr = () => {
+    clearWatchdog();
     hideIntroGate();
     showMenu();
+  };
+  introVideo.addEventListener('playing', clearWatchdog, { once: true });
+  introVideo.addEventListener('error', onErr, { once: true });
+  const watchdog = window.setTimeout(() => {
+    // Si no ha arrancado, entramos al menu igualmente.
+    if (introVideo.paused) {
+      onErr();
+      return;
+    }
+    clearWatchdog();
+  }, 1600);
+
+  try {
+    introVideo.play().then(() => {
+      // Intentamos recuperar audio una vez arrancado.
+      try {
+        introVideo.muted = isMuted;
+      } catch (_) {}
+    }).catch(onErr);
+  } catch (_) {
+    onErr();
   }
 }
 

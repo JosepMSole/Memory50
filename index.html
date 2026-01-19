@@ -24,7 +24,9 @@
         <div id="introHint" class="introHint">(El video no se puede omitir)</div>
       </div>
       <video id="introVideo" class="introVideo" preload="auto" playsinline>
+        <!-- Preferimos WebM (desktop). MP4 queda como fallback (iOS/Safari). -->
         <source src="assets/introdisturbinggames.webm" type="video/webm" />
+        <source src="assets/introdisturbinggames.mp4" type="video/mp4" />
       </video>
     </div>
 
@@ -43,7 +45,9 @@
         playsinline
         preload="auto"
       >
+        <!-- Preferimos WebM (desktop). MP4 queda como fallback (iOS/Safari). -->
         <source src="assets/videomenu.webm" type="video/webm" />
+        <source src="assets/videomenu.mp4" type="video/mp4" />
       </video>
       <div class="menuVignette" aria-hidden="true"></div>
 
