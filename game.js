@@ -15,6 +15,7 @@ const introGate = document.getElementById('introGate');
 const introStartBtn = document.getElementById('introStartBtn');
 const introVideo = document.getElementById('introVideo');
 const introMobileFrame = document.getElementById('introMobileFrame');
+const introHint = document.getElementById('introHint');
 
 // Menu background video
 const menuVideo = document.getElementById('menuVideo');
@@ -65,7 +66,10 @@ function detectSmartphone() {
     const small = window.matchMedia('(max-width: 900px)').matches;
     const coarse = window.matchMedia('(pointer: coarse)').matches;
     const touch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    return (small && (coarse || touch));
+    // Fallback por userAgent (algunos navegadores reportan mal pointer/coarse)
+    const ua = (navigator.userAgent || '').toLowerCase();
+    const uaMobile = /(iphone|ipod|android|mobile|windows phone)/.test(ua);
+    return (small && (coarse || touch || uaMobile));
   } catch (_) {
     return false;
   }
@@ -73,6 +77,14 @@ function detectSmartphone() {
 
 const isSmartphone = detectSmartphone();
 try { document.body.classList.toggle('isMobile', isSmartphone); } catch (_) {}
+
+// Copy adjustments for smartphone vs desktop UI
+try {
+  if (isSmartphone) {
+    // In smartphone we don't show the "unskippable video" hint because there is no video.
+    if (introHint) introHint.style.display = 'none';
+  }
+} catch (_) {}
 
 
 function openSecretGift(){
@@ -635,16 +647,30 @@ function startIntroPlayback() {
       } catch (_) {}
     }
 
-    // Tras 2s, pasamos al menu.
-    window.setTimeout(() => {
+    const finishMobileIntro = () => {
       try {
         introMobileFrame?.classList.remove('isActive');
         introMobileFrame?.setAttribute('aria-hidden', 'true');
         introGate?.classList.remove('isPlaying');
       } catch (_) {}
+      // Aseguramos que el boton no quede bloqueado si el usuario vuelve atras o recarga.
+      try { if (introStartBtn) introStartBtn.disabled = false; } catch (_) {}
       hideIntroGate();
       showMenu();
-    }, 2000);
+    };
+
+    // Tras 2s (o al finalizar la animacion), pasamos al menu.
+    let done = false;
+    const once = () => {
+      if (done) return;
+      done = true;
+      finishMobileIntro();
+    };
+
+    try {
+      introMobileFrame?.addEventListener('animationend', once, { once: true });
+    } catch (_) {}
+    window.setTimeout(once, 2200);
     return;
   }
 
