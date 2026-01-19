@@ -820,11 +820,38 @@ body.isMobile .timer{font-size:clamp(26px, 6vw, 40px);box-shadow:none}
   z-index:3;
   opacity:0;
   pointer-events:none;
-  background:center/cover no-repeat url("assets/disturbinggames_frameintro.jpg");
+  background:center/cover no-repeat url("assets/disturbinggames_frameintroV.jpg");
   transform:scale(1.06);
   filter:contrast(1.08) saturate(1.05);
 }
 body.isMobile .introVideo{display:none;}
+
+/* Smartphone: when any menu/modal is open, never allow the game board to show through. */
+body.isMobile.hasMenu #hud,
+body.isMobile.hasMenu main,
+body.isMobile.hasMenu #board,
+body.isMobile.hasMenu .timerWrap,
+body.isMobile.hasMenu .bottomControls,
+body.isMobile.hasMenu #status,
+body.isMobile.hasMenu footer{
+  display:none !important;
+}
+
+/* Smartphone: modals must be scrollable (How to play + Mural) */
+body.isMobile .modalCard{
+  max-height:92vh;
+  overflow:hidden;
+}
+body.isMobile .modalBody{
+  max-height:70vh;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  font-size:15px;
+  line-height:1.35;
+}
+
+/* Smartphone: Mural should be scrollable and without numeric badges */
+body.isMobile .muralCode{display:none;}
 body.isMobile .introMobileFrame.isActive{
   opacity:1;
   animation:mobileIntro 2s ease-out forwards;
