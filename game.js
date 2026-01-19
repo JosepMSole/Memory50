@@ -623,31 +623,43 @@ function startIntroPlayback() {
 
   applyVolumeTo(introVideo);
 
-  // Watchdog: si el video no llega a reproducirse (codec no soportado, etc.),
-  // no bloqueamos al usuario en la pantalla de inicio.
+  // Watchdog (movil): algunos navegadores (especialmente iOS)
+  // pueden quedarse en "loading" sin disparar error ni empezar a reproducir.
+  // Si no llega a entrar en "playing" en un breve periodo, pasamos al menu.
   let cleared = false;
-  const clearWatchdog = () => {
+  let started = false;
+
+  const onErr = () => {
     if (cleared) return;
     cleared = true;
-    try { introVideo.removeEventListener('playing', clearWatchdog); } catch (_) {}
+    try { introVideo.removeEventListener('playing', onPlaying); } catch (_) {}
     try { introVideo.removeEventListener('error', onErr); } catch (_) {}
+    try { introVideo.removeEventListener('stalled', onErr); } catch (_) {}
+    try { introVideo.removeEventListener('abort', onErr); } catch (_) {}
+    try { introVideo.removeEventListener('emptied', onErr); } catch (_) {}
     if (watchdog) window.clearTimeout(watchdog);
-  };
-  const onErr = () => {
-    clearWatchdog();
+    try { introGate?.classList.remove('isPlaying'); } catch (_) {}
+    if (introStartBtn) introStartBtn.disabled = false;
     hideIntroGate();
     showMenu();
   };
-  introVideo.addEventListener('playing', clearWatchdog, { once: true });
+
+  const onPlaying = () => {
+    started = true;
+    try { introVideo.removeEventListener('playing', onPlaying); } catch (_) {}
+    if (watchdog) window.clearTimeout(watchdog);
+  };
+
+  introVideo.addEventListener('playing', onPlaying, { once: true });
   introVideo.addEventListener('error', onErr, { once: true });
+  introVideo.addEventListener('stalled', onErr, { once: true });
+  introVideo.addEventListener('abort', onErr, { once: true });
+  introVideo.addEventListener('emptied', onErr, { once: true });
+
   const watchdog = window.setTimeout(() => {
-    // Si no ha arrancado, entramos al menu igualmente.
-    if (introVideo.paused) {
-      onErr();
-      return;
-    }
-    clearWatchdog();
-  }, 1600);
+    // Si no ha llegado a "playing" (aunque paused sea false), no bloqueamos.
+    if (!started) onErr();
+  }, 1400);
 
   try {
     introVideo.play().then(() => {
