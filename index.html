@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>MEMORY50</title>
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- Fun + horror/sci-fi typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Creepster&family=Orbitron:wght@500;700;900&family=Nunito:wght@500;700;900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="hasMenu">
+    <!-- Intro gate (unskippable intro video; audio only) -->
+    <div id="introGate" class="introGate" aria-hidden="false">
+      <div class="introCard" role="dialog" aria-label="Introduccion">
+        <div class="introTitle">DISTURBING GAMES</div>
+        <p class="introText">Pulsa para iniciar la introduccion.</p>
+        <button id="introStartBtn" type="button" class="btn btnBig btnGold">INICIAR</button>
+        <div id="introHint" class="introHint">(El video no se puede omitir)</div>
+      </div>
+      <video id="introVideo" class="introVideo" preload="auto" playsinline>
+        <source src="assets/introdisturbinggames.webm" type="video/webm" />
+      </video>
+    </div>
+
+    <!-- Floating particles layer -->
+    <canvas id="particles" class="particles" aria-hidden="true"></canvas>
+    <div class="grunge" aria-hidden="true"></div>
+
+    <!-- Start menu (and all submenus/modals) -->
+    <div id="menu" class="menu" role="dialog" aria-label="Menu principal">
+      <video
+        id="menuVideo"
+        class="menuVideo"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+      >
+        <source src="assets/videomenu.webm" type="video/webm" />
+      </video>
+      <div class="menuVignette" aria-hidden="true"></div>
+
+      <div class="menuCard">
+        <img class="logoTitle" src="assets/logomemory50.png" alt="MEMORY50" />
+
+        <div class="menuButtons">
+          <button id="playBtn" type="button" class="btn btnBig btnGold" disabled>JUGAR</button>
+          <button id="muralBtn" type="button" class="btn btnBig" disabled>MURAL</button>
+          <button id="howBtn" type="button" class="btn btnBig">Como jugar</button>
+          <button id="secretBtn" type="button" class="btn btnBig btnBlue" style="display:none">REGALO SECRETO</button>
+          <a
+            class="btn btnBig btnLink"
+            href="https://www.disturbingstories.com"
+            target="_blank"
+            rel="noopener"
+          >
+            Descubre DISTURBING STORIES
+          </a>
+        </div>
+        <div id="menuStatus" class="menuStatus" aria-live="polite">Cargando...</div>
+      </div>
+    </div>
+
+    <!-- Mural modal -->
+    <div id="muralModal" class="modal" aria-hidden="true">
+      <div class="modalBackdrop" data-close="true"></div>
+      <div class="modalCard muralCard" role="dialog" aria-label="Mural">
+        <div class="modalHeader">
+          <div class="modalTitle">Mural</div>
+          <button id="closeMuralBtn" type="button" class="iconBtn" aria-label="Cerrar">✕</button>
+        </div>
+        <div class="modalBody">
+          <p class="muted">
+            Desbloquea las 50 imagenes completando los niveles.<br />
+            ¡Cada imagen abre su historia dentro de la web de Disturbing Stories! ¡Tienes un monton para leer gratis!
+          </p>
+          <div id="muralGrid" class="muralGrid" aria-label="Mural de imagenes"></div>
+        </div>
+        <div class="modalFooter">
+          <button type="button" class="btn btnPrimary" data-close="true">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secret modal -->
+    <div id="secretModal" class="modal" aria-hidden="true">
+      <div class="modalBackdrop" data-close="true"></div>
+      <div class="modalCard" role="dialog" aria-label="Regalo secreto">
+        <div class="modalHeader">
+          <div class="modalTitle">Regalo secreto</div>
+          <button id="closeSecretBtn" type="button" class="iconBtn" aria-label="Cerrar">✕</button>
+        </div>
+        <div class="modalBody">
+          <p>Has completado los 10 niveles. Aqui tienes acceso a una <strong>historia exclusiva</strong>.</p>
+          <p class="muted">(Este enlace es temporal y podra cambiar manteniendo la misma estructura.)</p>
+        </div>
+        <div class="modalFooter">
+          <a
+            class="btn btnPrimary btnLink"
+            href="https://www.disturbingstories.com/083_8u8w.html"
+            target="_blank"
+            rel="noopener"
+          >
+            ABRIR HISTORIA EXCLUSIVA
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- How to play modal -->
+    <div id="howModal" class="modal" aria-hidden="true">
+      <div class="modalBackdrop" data-close="true"></div>
+      <div class="modalCard" role="dialog" aria-label="Como jugar">
+        <div class="modalHeader">
+          <div class="modalTitle">Como jugar</div>
+          <button id="closeHowBtn" type="button" class="iconBtn" aria-label="Cerrar">✕</button>
+        </div>
+        <div class="modalBody">
+          <ol>
+            <li>Haz clic en dos cartas para GIRARLAS.</li>
+            <li>Si son iguales, se quedan descubiertas.</li>
+            <li>Encuentra las 5 parejas para pasar al siguiente nivel.</li>
+            <li>Completa los 10 niveles y ¡consigue un regalo exclusivo!</li>
+          </ol>
+          <p class="muted">Puedes salir al MENU cuando quieras para revisar tus avances en el MURAL y luego CONTINUAR la partida normalmente.</p>
+          <p class="muted goldNote">IMPORTANTE: SI PRESIONAS REINICIAR, EL JUEGO VUELVE A EMPEZAR DESDE 0. RECUERDA QUE SI CIERRAS LA PAGINA, PIERDES TODO EL PROGRESO Y VOLVERAS A EMPEZAR.</p>
+        </div>
+        <div class="modalFooter">
+          <button type="button" class="btn btnPrimary" data-close="true">Entendido</button>
+        </div>
+      </div>
+    </div>
+
+    <header id="hud" class="hud" aria-live="polite">
+      <div class="hudLeft">
+        <img class="hudLogo" src="assets/logomemory50.png" alt="MEMORY50" />
+        <div class="meta">
+          <span>NIVEL <strong id="levelLabel">1</strong>/10</span>
+          <span class="dot">•</span>
+          <span>PAREJAS <strong id="pairsLabel">0/5</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <div id="status" class="status"></div>
+    <main>
+      <div id="board" class="board" aria-label="Tablero"></div>
+    </main>
+
+    <!-- Level timer (below board, above buttons) -->
+    <div class="timerWrap" aria-label="Cronometro">
+      <div id="timer" class="timer" aria-live="polite" aria-atomic="true">00:00.0</div>
+    </div>
+
+    <!-- Bottom controls -->
+    <div class="bottomControls" aria-label="Controles">
+      <button id="menuBtn" type="button" class="btn">MENU</button>
+      <button id="reloadBtn" type="button" class="btn btnDanger">REINICIAR</button>
+    </div>
+
+    <!-- Level complete overlay -->
+    <div id="completeOverlay" class="completeOverlay" aria-hidden="true">
+      <div class="completeBackdrop"></div>
+      <div class="completeCard" role="dialog" aria-label="Nivel completado">
+        <img id="completeLogo" class="completeLogo" src="assets/complete.png" alt="Completado" />
+        <div id="finalMessage" class="finalMessage" style="display:none"></div>
+        <div id="totalTime" class="totalTime" style="display:none"></div>
+        <div class="completeBtns">
+          <button id="completeNextBtn" type="button" class="btn btnBig btnPrimary completeBtn">
+            SIGUIENTE NIVEL
+          </button>
+          <button id="completeMenuBtn" type="button" class="btn btnBig completeBtn" style="display:none">
+            VOLVER AL MENU
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="footerRow">
+        <div class="footerText">
+          <div class="footerLine">© DISTURBING STORIES 2026 / <a href="https://www.josepmariasole.com/" target="_blank" rel="noopener">VIANDA VISUAL</a></div>
+          <div class="footerLine"><a href="https://www.disturbingstories.com/games" target="_blank" rel="noopener">DISTURBINGSTORIES.COM/GAMES</a></div>
+        </div>
+        <div class="audioControls" aria-label="Control de audio">
+          <button id="muteBtn" type="button" class="audioIcon" aria-label="Mute">🔊</button>
+          <input id="volumeSlider" class="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.65" aria-label="Volumen" />
+        </div>
+      </div>
+    </footer>
+
+    <script src="game.js"></script>
+  </body>
+</html>
