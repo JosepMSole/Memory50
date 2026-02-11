@@ -960,11 +960,22 @@ function onCardClick(card) {
 
 function wireEvents() {
   // Intro gate
-  introStartBtn?.addEventListener('click', () => {
-    if (!ready) return;
+  // v0.8.1: el botón INICIAR NO debe depender de `ready`.
+  // En algunos móviles, si falla la detección/carga de recursos (o tarda mucho),
+  // `ready` puede quedarse en false y se quedaba bloqueado en INICIAR.
+  // Permitimos siempre pasar al menú; el propio menú controla si se puede JUGAR.
+  const onIntroStart = (ev) => {
+    try { ev?.preventDefault?.(); } catch (_) {}
+    try { ev?.stopPropagation?.(); } catch (_) {}
     if (introStartBtn) introStartBtn.disabled = true;
     startIntroPlayback();
-  });
+  };
+
+  // Escuchamos varios eventos para máxima compatibilidad (iOS/Safari a veces
+  // no dispara click de forma fiable en overlays).
+  introStartBtn?.addEventListener('pointerup', onIntroStart, { passive: false });
+  introStartBtn?.addEventListener('touchend', onIntroStart, { passive: false });
+  introStartBtn?.addEventListener('click', onIntroStart);
 
   introVideo?.addEventListener('ended', () => {
     hideIntroGate();
