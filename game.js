@@ -637,43 +637,40 @@ function hideIntroGate() {
 }
 
 function startIntroPlayback() {
-  // Medida drastica (smartphone): NO reproducimos el videointro.
-  // En su lugar, mostramos una animacion de 2s a pantalla completa.
+  // Smartphone: no reproducimos el videointro.
+  // El objetivo es: 1) desbloquear audio con el gesto del usuario, 2) avanzar SIEMPRE al menú.
   if (isSmartphone) {
+    // Smartphone: no intro video. Advance to menu quickly and reliably.
+    // Some mobile browsers may drop animation events or throttle timers; we use multiple fallbacks.
     tryStartAudio();
     stopAllBgm();
     try { introGate?.classList.add('isPlaying'); } catch (_) {}
-    if (introMobileFrame) {
-      try {
-        introMobileFrame.classList.add('isActive');
-        introMobileFrame.setAttribute('aria-hidden', 'false');
-      } catch (_) {}
-    }
 
-    const finishMobileIntro = () => {
+    const goMenu = () => {
       try {
         introMobileFrame?.classList.remove('isActive');
         introMobileFrame?.setAttribute('aria-hidden', 'true');
         introGate?.classList.remove('isPlaying');
       } catch (_) {}
-      // Aseguramos que el boton no quede bloqueado si el usuario vuelve atras o recarga.
       try { if (introStartBtn) introStartBtn.disabled = false; } catch (_) {}
       hideIntroGate();
       showMenu();
     };
 
-    // Tras 2s (o al finalizar la animacion), pasamos al menu.
-    let done = false;
-    const once = () => {
-      if (done) return;
-      done = true;
-      finishMobileIntro();
-    };
-
+    // Optional short flash frame (if asset exists).
     try {
-      introMobileFrame?.addEventListener('animationend', once, { once: true });
+      if (introMobileFrame) {
+        introMobileFrame.classList.add('isActive');
+        introMobileFrame.setAttribute('aria-hidden', 'false');
+      }
     } catch (_) {}
-    window.setTimeout(once, 2200);
+
+    // Fast path: avoid black screen by advancing almost immediately.
+    window.setTimeout(goMenu, 120);
+
+    // Extra fallbacks.
+    try { introMobileFrame?.addEventListener('animationend', goMenu, { once: true }); } catch (_) {}
+    window.setTimeout(goMenu, 1500);
     return;
   }
 
