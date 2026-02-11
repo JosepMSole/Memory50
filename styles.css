@@ -210,6 +210,8 @@ body::after{
 .btnBlue:hover{filter:brightness(1.06)}
 
 .btnBig{padding:14px 16px;border-radius:16px;font-size:18px}
+
+.btn.discoverLink{flex-direction:column;gap:2px}
 .btnLink{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 
 .discoverLine{display:block; width:100%; text-align:center; line-height:1.05}
