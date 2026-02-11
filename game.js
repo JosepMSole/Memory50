@@ -16,6 +16,7 @@ const introStartBtn = document.getElementById('introStartBtn');
 const introVideo = document.getElementById('introVideo');
 const introMobileFrame = document.getElementById('introMobileFrame');
 const introHint = document.getElementById('introHint');
+const desktopOnlyOverlay = document.getElementById('desktopOnlyOverlay');
 
 // Menu background video
 const menuVideo = document.getElementById('menuVideo');
@@ -23,6 +24,9 @@ const menuVideo = document.getElementById('menuVideo');
 // Audio UI (footer)
 const muteBtn = document.getElementById('muteBtn');
 const volumeSlider = document.getElementById('volumeSlider');
+// Audio UI (menu)
+const menuMuteBtn = document.getElementById('menuMuteBtn');
+const menuVolumeSlider = document.getElementById('menuVolumeSlider');
 
 // Timer UI
 const timerEl = document.getElementById('timer');
@@ -408,7 +412,7 @@ let levelTimes = Array.from({ length: LEVELS }, () => 0);
 // ---------------------------
 // Audio (BGM + SFX)
 // ---------------------------
-let masterVolume = Number(volumeSlider?.value ?? 0.65);
+let masterVolume = Number((volumeSlider?.value ?? menuVolumeSlider?.value) ?? 0.65);
 let isMuted = false;
 let menuBgm = null;
 let gameBgm = null;
@@ -427,9 +431,20 @@ function applyVolumeTo(audio) {
 }
 
 function updateMuteIcon() {
-  if (!muteBtn) return;
-  muteBtn.textContent = isMuted || masterVolume === 0 ? '🔇' : '🔊';
-  muteBtn.setAttribute('aria-label', isMuted ? 'Unmute' : 'Mute');
+  const icon = (isMuted || masterVolume === 0) ? '🔇' : '🔊';
+  if (muteBtn) {
+    muteBtn.textContent = icon;
+    muteBtn.setAttribute('aria-label', isMuted ? 'Unmute' : 'Mute');
+  }
+  if (menuMuteBtn) {
+    menuMuteBtn.textContent = icon;
+    menuMuteBtn.setAttribute('aria-label', isMuted ? 'Unmute' : 'Mute');
+  }
+}
+
+function syncVolumeSliders() {
+  try { if (volumeSlider) volumeSlider.value = String(masterVolume); } catch (_) {}
+  try { if (menuVolumeSlider) menuVolumeSlider.value = String(masterVolume); } catch (_) {}
 }
 
 function ensureMenuBgm() {
@@ -537,24 +552,36 @@ function playLevelCompleteSfx() {
 }
 
 // Hook audio UI
+function onVolumeInput(val) {
+  masterVolume = Number(val);
+  syncVolumeSliders();
+  applyVolumeTo(menuBgm);
+  applyVolumeTo(gameBgm);
+  applyVolumeTo(introVideo);
+  updateMuteIcon();
+}
+
+function onToggleMute() {
+  isMuted = !isMuted;
+  applyVolumeTo(menuBgm);
+  applyVolumeTo(gameBgm);
+  applyVolumeTo(introVideo);
+  updateMuteIcon();
+}
+
 if (volumeSlider) {
-  volumeSlider.addEventListener('input', () => {
-    masterVolume = Number(volumeSlider.value);
-    applyVolumeTo(menuBgm);
-    applyVolumeTo(gameBgm);
-    applyVolumeTo(introVideo);
-    updateMuteIcon();
-  });
+  volumeSlider.addEventListener('input', () => onVolumeInput(volumeSlider.value));
+}
+if (menuVolumeSlider) {
+  menuVolumeSlider.addEventListener('input', () => onVolumeInput(menuVolumeSlider.value));
 }
 if (muteBtn) {
-  muteBtn.addEventListener('click', () => {
-    isMuted = !isMuted;
-    applyVolumeTo(menuBgm);
-    applyVolumeTo(gameBgm);
-    applyVolumeTo(introVideo);
-    updateMuteIcon();
-  });
+  muteBtn.addEventListener('click', onToggleMute);
 }
+if (menuMuteBtn) {
+  menuMuteBtn.addEventListener('click', onToggleMute);
+}
+syncVolumeSliders();
 updateMuteIcon();
 
 // Start BGM as soon as the browser allows it (first user interaction)
@@ -640,44 +667,22 @@ function startIntroPlayback() {
   // Smartphone: no reproducimos el videointro.
   // El objetivo es: 1) desbloquear audio con el gesto del usuario, 2) avanzar SIEMPRE al menú.
   if (isSmartphone) {
-    // MOBILE v0.8: NO videointro.
-    // En su lugar mostramos durante 2s una imagen vertical con un suave zoom-out,
-    // sobre fondo negro, y luego vamos al menu principal.
-    // (Esto evita el bloqueo de rendering / z-index que estabamos viendo en algunos navegadores.)
-
-    // 1) Desbloquear audio con el gesto del usuario (pero sin dejar pistas sonando aun)
+    // v1.1: La app es EXCLUSIVA PARA DESKTOP.
+    // Tras pulsar INICIAR en un dispositivo mobile, mostramos una imagen a pantalla completa
+    // y bloqueamos cualquier interaccion.
     tryStartAudio();
     stopAllBgm();
-
-    // 2) Ocultar el boton y mostrar el frame de intro
-    try { introGate?.classList.add('isPlaying'); } catch (_) {}
+    try { introVideo?.pause(); } catch (_) {}
+    try { menuVideo?.pause(); } catch (_) {}
+    try { introGate?.style && (introGate.style.display = 'none'); } catch (_) {}
     try {
-      if (introMobileFrame) {
-        introMobileFrame.classList.add('isActive');
-        introMobileFrame.setAttribute('aria-hidden', 'false');
+      if (desktopOnlyOverlay) {
+        desktopOnlyOverlay.style.display = 'flex';
+        desktopOnlyOverlay.setAttribute('aria-hidden', 'false');
+        // impedir scroll/gestos
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
       }
-    } catch (_) {}
-
-    const goMenu = () => {
-      try {
-        introMobileFrame?.classList.remove('isActive');
-        introMobileFrame?.setAttribute('aria-hidden', 'true');
-        introGate?.classList.remove('isPlaying');
-      } catch (_) {}
-      try { if (introStartBtn) introStartBtn.disabled = false; } catch (_) {}
-      hideIntroGate();
-      showMenu();
-    };
-
-    // 3) Tras 2s, avanzar. Añadimos fallback extra por si se pierde el animationend.
-    const t1 = window.setTimeout(goMenu, 2000);
-    const t2 = window.setTimeout(goMenu, 2400);
-    try {
-      introMobileFrame?.addEventListener('animationend', () => {
-        window.clearTimeout(t1);
-        window.clearTimeout(t2);
-        goMenu();
-      }, { once: true });
     } catch (_) {}
     return;
   }
@@ -1018,7 +1023,7 @@ function wireEvents() {
   });
 
   playBtn?.addEventListener('click', () => {
-    if (!ready) return;
+    /* ready gate removed for intro */
     // Start new game once; afterwards this becomes "CONTINUAR".
     if (!playing) {
       playing = true;
@@ -1042,12 +1047,12 @@ function wireEvents() {
 
   // Allow returning to the main menu at any time (without losing progress)
   menuBtn?.addEventListener('click', () => {
-    if (!ready) return;
+    /* ready gate removed for intro */
     showMenu();
   });
 
   muralBtn?.addEventListener('click', () => {
-    if (!ready) return;
+    /* ready gate removed for intro */
     if (gamePool.length) renderMural(gamePool);
     openModal(muralModal, true);
   });

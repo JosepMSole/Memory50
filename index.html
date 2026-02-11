@@ -19,13 +19,21 @@
     <!-- Intro gate (unskippable intro video; audio only) -->
     <div id="introGate" class="introGate" aria-hidden="false">
       <div class="introCard" role="dialog" aria-label="Introduccion">
-        <button id="introStartBtn" type="button" class="btn btnBig btnBlue">INICIAR</button>
+        <div class="introStartWrap">
+          <img class="introIco" src="ICO.ico" alt="ICO" />
+          <button id="introStartBtn" type="button" class="btn btnBig btnBlue introStartBtn">INICIAR</button>
+        </div>
       </div>
       <!-- Smartphone fallback: 2s full-screen image animation (no video) -->
       <div id="introMobileFrame" class="introMobileFrame" aria-hidden="true"></div>
       <video id="introVideo" class="introVideo" preload="auto" playsinline>
         <!-- Preferimos WebM (desktop). MP4 queda como fallback (iOS/Safari). -->
         <source src="assets/introdisturbinggames.webm" type="video/webm" /></video>
+    </div>
+
+    <!-- Desktop-only lock (shown on mobile after INICIAR) -->
+    <div id="desktopOnlyOverlay" class="desktopOnlyOverlay" aria-hidden="true" style="display:none">
+      <img class="desktopOnlyImg" src="assets/EXCLUSIVO_DESKTOP.jpg" alt="Exclusivo Desktop" />
     </div>
 
     <!-- Floating particles layer -->
@@ -66,6 +74,14 @@
             <span class="discoverLine">STORIES</span>
           </a>
         </div>
+
+        <div class="menuAudio">
+          <div class="audioControls" aria-label="Control de audio">
+            <button id="menuMuteBtn" type="button" class="audioIcon" aria-label="Mute">🔊</button>
+            <input id="menuVolumeSlider" class="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.65" aria-label="Volumen" />
+          </div>
+        </div>
+
         <div id="menuStatus" class="menuStatus" aria-live="polite">Cargando...</div>
       </div>
     </div>
