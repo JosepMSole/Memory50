@@ -172,6 +172,10 @@ body::after{
   font-weight:900;
   letter-spacing:.4px;
 }
+.btn:hover,
+.btn:focus-visible{
+  color:#fff;
+}
 .btn:hover{background:rgba(24,26,52,.95)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btnPrimary{
@@ -207,6 +211,12 @@ body::after{
 
 .btnBig{padding:14px 16px;border-radius:16px;font-size:18px}
 .btnLink{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+
+.discoverLine{display:inline; line-height:1.1}
+@media (max-width:520px){
+  .btn.discoverLink{flex-direction:column;gap:2px}
+  .discoverLine{display:block}
+}
 
 .iconBtn{
   appearance:none;
@@ -251,9 +261,10 @@ body.isMobile main{padding:10px 10px 6px}
 body.isMobile .status{padding:8px 10px 0 10px;font-size:14px}
 body.isMobile .hud{padding:10px 12px}
 body.isMobile .hudLeft .meta{font-size:14px;gap:8px}
+/* Mobile: use 4 columns to fill vertical space better */
 body.isMobile .board{
-  grid-template-columns:repeat(5, minmax(0, 1fr));
-  gap:6px;
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:8px;
   max-width:100%;
 }
 body.isMobile .cardFace{box-shadow:none}
@@ -326,9 +337,11 @@ body.isMobile .cardFace{box-shadow:none}
   animation:matchHalo 1s ease-out;
 }
 
-/* Mobile: disable heavy match glow for smooth gameplay */
-body.isMobile .card.matchGlow::after{display:none}
-body.isMobile .card.matchGlow .cardFace{animation:none}
+/* Mobile: keep the glow (lighter) so players still get feedback */
+body.isMobile .card.matchGlow::after{
+  inset:-26px;
+  filter:blur(7px);
+}
 
 .card.matchGlow .cardFace{
   animation:matchGlow 1s ease-out;
@@ -770,17 +783,17 @@ body.isMobile .timer{font-size:clamp(26px, 6vw, 40px);box-shadow:none}
   align-items:center;
   justify-content:center;
   padding:22px;
-  background:rgba(0,0,0,.78);
-  backdrop-filter:blur(10px);
+  background:#000;
+  backdrop-filter:none;
 }
 .introGate.isHidden{display:none}
 .introCard{
   width:min(680px, 100%);
   border-radius:26px;
-  border:1px solid rgba(255,255,255,.14);
-  background:linear-gradient(180deg, rgba(14,15,30,.96), rgba(8,8,14,.96));
-  box-shadow:0 26px 80px rgba(0,0,0,.62);
-  padding:20px 18px;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+  padding:0;
   text-align:center;
 }
 .introTitle{
@@ -798,7 +811,13 @@ body.isMobile .timer{font-size:clamp(26px, 6vw, 40px);box-shadow:none}
   height:100%;
   object-fit:cover;
   z-index:0;
+  opacity:0;
+  transition:opacity .2s ease;
 }
+.introGate.isPlaying .introVideo{opacity:1;}
+/* Menu "Discover" link: 1 line on desktop, 3 lines on mobile */
+.discoverLine{display:inline;}
+body.isMobile .discoverLine{display:block; line-height:1.05;}
 .introGate .introCard{position:relative; z-index:2;}
 .introGate.isPlaying .introCard{display:none;}
 .introGate::before{

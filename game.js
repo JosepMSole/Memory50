@@ -54,7 +54,8 @@ const completeLogo = document.getElementById('completeLogo');
 const finalMessage = document.getElementById('finalMessage');
 const totalTimeEl = document.getElementById('totalTime');
 
-const SECRET_GIFT_LINK = 'https://www.disturbingstories.com/083_8u8w.html';
+// Final gift link (must be exact)
+const SECRET_GIFT_LINK = 'https://www.disturbingstories.com/050_nk64.html';
 
 // ---------------------------
 // Device detection (smartphone)
@@ -344,7 +345,7 @@ function renderMural(pool) {
     } else {
       tile.addEventListener('click', () => {
         const url = is050
-          ? 'https://www.disturbingstories.com/083_8u8w.html'
+          ? 'https://www.disturbingstories.com/050_nk64.html'
           : `https://www.disturbingstories.com/${code}.html`;
         window.open(url, '_blank', 'noopener');
       });
@@ -558,6 +559,8 @@ updateMuteIcon();
 
 // Start BGM as soon as the browser allows it (first user interaction)
 window.addEventListener('pointerdown', tryStartAudio, { once: false, passive: true });
+// iOS Safari can be picky: also listen to touchstart.
+window.addEventListener('touchstart', tryStartAudio, { once: false, passive: true });
 
 // ---------------------------
 // Timer
@@ -1167,10 +1170,42 @@ async function init() {
   // ---------------------------------------------------------------------
   if (isSmartphone) {
     try {
-      allImages = Array.from({ length: MAX_IMAGES }, (_, i) => `assets/${pad3(i + 1)}.jpg`);
-      availableBgs = Array.from({ length: LEVELS }, (_, i) => `assets/bg${pad2(i + 1)}.jpg`);
-      successSounds = [COMPLETE_SFX_ALWAYS];
-      gameMusicTracks = [];
+      // Mobile: avoid scanning hundreds of filenames, BUT still avoid broken images.
+      // We only probe the standard pack (001..050 + bg01..bg10 + sfx/music ranges).
+      const probeExists = (url) =>
+        new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = url;
+        });
+
+      const detectPack = async (makeUrl, count) => {
+        const out = [];
+        // Small batches to keep iOS/Safari happy.
+        const BATCH = 6;
+        for (let i = 0; i < count; i += BATCH) {
+          const batch = [];
+          for (let j = 0; j < BATCH && i + j < count; j++) {
+            const url = makeUrl(i + j);
+            batch.push(
+              probeExists(url).then((ok) => {
+                if (ok) out.push(url);
+              })
+            );
+          }
+          // eslint-disable-next-line no-await-in-loop
+          await Promise.all(batch);
+        }
+        return out;
+      };
+
+      allImages = await detectPack((idx) => `assets/${pad3(idx + 1)}.jpg`, MAX_IMAGES);
+      availableBgs = await detectPack((idx) => `assets/bg${pad2(idx + 1)}.jpg`, LEVELS);
+
+      // Success sounds + game music: keep the detection lightweight as well.
+      successSounds = await detectSuccessSounds();
+      gameMusicTracks = await detectGameMusicTracks();
 
       // Prepare pool & level chunks.
       const img050 = allImages.find((s) => codeFromSrc(s) === '050') || null;
