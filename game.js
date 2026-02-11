@@ -640,11 +640,23 @@ function startIntroPlayback() {
   // Smartphone: no reproducimos el videointro.
   // El objetivo es: 1) desbloquear audio con el gesto del usuario, 2) avanzar SIEMPRE al menú.
   if (isSmartphone) {
-    // Smartphone: no intro video. Advance to menu quickly and reliably.
-    // Some mobile browsers may drop animation events or throttle timers; we use multiple fallbacks.
+    // MOBILE v0.8: NO videointro.
+    // En su lugar mostramos durante 2s una imagen vertical con un suave zoom-out,
+    // sobre fondo negro, y luego vamos al menu principal.
+    // (Esto evita el bloqueo de rendering / z-index que estabamos viendo en algunos navegadores.)
+
+    // 1) Desbloquear audio con el gesto del usuario (pero sin dejar pistas sonando aun)
     tryStartAudio();
     stopAllBgm();
+
+    // 2) Ocultar el boton y mostrar el frame de intro
     try { introGate?.classList.add('isPlaying'); } catch (_) {}
+    try {
+      if (introMobileFrame) {
+        introMobileFrame.classList.add('isActive');
+        introMobileFrame.setAttribute('aria-hidden', 'false');
+      }
+    } catch (_) {}
 
     const goMenu = () => {
       try {
@@ -657,20 +669,16 @@ function startIntroPlayback() {
       showMenu();
     };
 
-    // Optional short flash frame (if asset exists).
+    // 3) Tras 2s, avanzar. Añadimos fallback extra por si se pierde el animationend.
+    const t1 = window.setTimeout(goMenu, 2000);
+    const t2 = window.setTimeout(goMenu, 2400);
     try {
-      if (introMobileFrame) {
-        introMobileFrame.classList.add('isActive');
-        introMobileFrame.setAttribute('aria-hidden', 'false');
-      }
+      introMobileFrame?.addEventListener('animationend', () => {
+        window.clearTimeout(t1);
+        window.clearTimeout(t2);
+        goMenu();
+      }, { once: true });
     } catch (_) {}
-
-    // Fast path: avoid black screen by advancing almost immediately.
-    window.setTimeout(goMenu, 120);
-
-    // Extra fallbacks.
-    try { introMobileFrame?.addEventListener('animationend', goMenu, { once: true }); } catch (_) {}
-    window.setTimeout(goMenu, 1500);
     return;
   }
 
