@@ -1,0 +1,2589 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>MEMORY50 v2.1</title>
+    <meta name="memory50-version" content="2.1" />
+    <link rel="icon" href="ICO.ico" type="image/x-icon" />
+    <style>
+:root{
+  --bg:#07070c;
+  --panel:#111225;
+  --panel2:#181a34;
+  --text:#f1f2ff;
+  --muted:#b9bde7;
+  --accent:#6ea8fe;
+  --accent2:#a5fffb;
+  --danger:#ff4d6d;
+  --cardRadius:16px;
+
+  /* gets set per level by JS */
+  --levelBg:none;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:Nunito, system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overflow-x:hidden;
+}
+
+/* ------------------------------
+   Smartphone performance/layout
+   ------------------------------ */
+body.isMobile{
+  -webkit-text-size-adjust:100%;
+}
+body.isMobile:not(.hasMenu){
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+/* Mobile: remove heavy blur + endless drift animation */
+body.isMobile::before{
+  filter:saturate(1.02) contrast(1.08) brightness(.46);
+  animation:none;
+  will-change:auto;
+}
+body.isMobile::after{opacity:.45}
+body.isMobile .grunge{opacity:.18;filter:none}
+body.isMobile .particles{display:none}
+
+/* Level background + sci‑fi horror mood */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-3;
+  background:
+    var(--levelBg) center/cover no-repeat,
+    radial-gradient(1200px 700px at 50% 10%, rgba(110,168,254,.18), transparent 60%),
+    radial-gradient(900px 600px at 20% 90%, rgba(255,77,109,.12), transparent 55%),
+    linear-gradient(180deg, #05050a, #0b0c18);
+  /* Darker + slightly blurred like a horror sci‑fi screen */
+  filter:saturate(1.05) contrast(1.15) brightness(.42) blur(4px);
+  animation:bgDrift 2.35s ease-in-out infinite alternate;
+  will-change:transform, background-position;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  pointer-events:none;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,.035),
+      rgba(255,255,255,.035) 1px,
+      rgba(0,0,0,0) 3px,
+      rgba(0,0,0,0) 6px
+    ),
+    radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 40%, rgba(0,0,0,.55) 100%);
+  mix-blend-mode:overlay;
+  opacity:.62;
+}
+
+/* Extra grunge layer */
+.grunge{
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  pointer-events:none;
+  opacity:.35;
+  background:
+    radial-gradient(900px 500px at 30% 30%, rgba(0,0,0,.35), transparent 60%),
+    radial-gradient(700px 520px at 70% 70%, rgba(0,0,0,.42), transparent 62%),
+    repeating-linear-gradient(45deg, rgba(0,0,0,.18), rgba(0,0,0,.18) 2px, rgba(0,0,0,0) 8px, rgba(0,0,0,0) 14px);
+  mix-blend-mode:multiply;
+  filter:blur(0.4px);
+}
+
+/* Floating particles (canvas) */
+.particles{
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  opacity:.75;
+}
+
+@keyframes bgDrift{
+  0%{transform:scale(1.10) translate3d(-4%,2.6%,0) rotate(-.9deg);background-position:40% 60%}
+  35%{transform:scale(1.26) translate3d(3.8%,-4.2%,0) rotate(.9deg);background-position:72% 35%}
+  100%{transform:scale(1.18) translate3d(-3.6%,-3.0%,0) rotate(-.6deg);background-position:32% 42%}
+}
+
+/* Floating particles canvas */
+.particles{
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  opacity:.55;
+}
+
+.hud{
+  position:sticky;
+  top:0;
+  z-index:10;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  background:rgba(4,5,10,.72);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+
+.hudLeft{
+  flex:1;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+.hudLogo{
+  width:min(260px, 60vw);
+  height:auto;
+  display:block;
+  filter:drop-shadow(0 0 16px rgba(255,77,109,.22)) drop-shadow(0 0 24px rgba(110,168,254,.18));
+}
+.hudLeft .meta{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:18px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.dot{opacity:.7}
+
+.hudRight{display:flex;align-items:center;gap:10px}
+
+.btn{
+  appearance:none;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(17,18,37,.92);
+  color:var(--text);
+  padding:10px 12px;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:900;
+  letter-spacing:.4px;
+}
+.btn:hover,
+.btn:focus-visible{
+  color:#fff;
+}
+.btn:hover{background:rgba(24,26,52,.95)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btnPrimary{
+  border-color:rgba(110,168,254,.55);
+  box-shadow:0 0 0 1px rgba(110,168,254,.10) inset;
+}
+
+/* Gold CTA (Play/Continue) */
+.btnGold{
+  background:linear-gradient(180deg, rgba(255,215,92,.98), rgba(214,149,18,.98));
+  border-color:rgba(255,215,92,.75);
+  color:#1b1200;
+  text-shadow:0 1px 0 rgba(255,255,255,.35);
+  box-shadow:
+    0 10px 26px rgba(214,149,18,.20),
+    0 0 0 1px rgba(255,215,92,.22) inset,
+    0 0 22px rgba(255,215,92,.22);
+}
+.btnGold:hover{filter:brightness(1.05)}
+
+/* Blue CTA (Secret gift) */
+.btnBlue{
+  background:linear-gradient(180deg, rgba(78,172,255,.98), rgba(30,86,240,.98));
+  border-color:rgba(94,179,255,.85);
+  color:#06101f;
+  text-shadow:0 1px 0 rgba(255,255,255,.25);
+  box-shadow:
+    0 10px 26px rgba(28,92,255,.22),
+    0 0 0 1px rgba(110,168,254,.25) inset,
+    0 0 26px rgba(110,168,254,.22);
+}
+.btnBlue:hover{filter:brightness(1.06)}
+
+.btnBig{padding:14px 16px;border-radius:16px;font-size:18px}
+
+.btn.discoverLink{flex-direction:column;gap:2px}
+.btnLink{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+
+.discoverLine{display:block; width:100%; text-align:center; line-height:1.05}
+@media (max-width:520px){
+  .btn.discoverLink{flex-direction:column;gap:2px}
+  .discoverLine{display:block; width:100%; text-align:center; line-height:1.05}
+}
+
+.iconBtn{
+  appearance:none;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(17,18,37,.92);
+  color:var(--text);
+  width:40px;
+  height:40px;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:900;
+}
+.iconBtn:hover{background:rgba(24,26,52,.95)}
+
+.status{
+  min-height:22px;
+  padding:10px 16px 0 16px;
+  color:var(--muted);
+  text-align:center;
+  font-size:16px;
+}
+
+main{padding:16px}
+
+.board{
+  display:grid;
+  grid-template-columns:repeat(5, minmax(0, 1fr));
+  gap:12px;
+  max-width:980px;
+  margin:0 auto;
+}
+
+@media (max-width:720px){
+  .board{grid-template-columns:repeat(4, minmax(0, 1fr))}
+}
+@media (max-width:520px){
+  .board{grid-template-columns:repeat(3, minmax(0, 1fr))}
+}
+
+/* Mobile: fit the whole 10-card board on screen (5x2) */
+body.isMobile main{padding:10px 10px 6px}
+body.isMobile .status{padding:8px 10px 0 10px;font-size:14px}
+body.isMobile .hud{padding:10px 12px}
+body.isMobile .hudLeft .meta{font-size:14px;gap:8px}
+/* Mobile: use 4 columns to fill vertical space better */
+body.isMobile .board{
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:8px;
+  max-width:100%;
+}
+body.isMobile .cardFace{box-shadow:none}
+
+.card{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+  border:0;
+  padding:0;
+  background:transparent;
+  cursor:pointer;
+  perspective:1000px;
+}
+
+.cardInner{
+  position:absolute;
+  inset:0;
+  border-radius:var(--cardRadius);
+  transform-style:preserve-3d;
+  transition:transform .22s ease;
+}
+
+.cardFace{
+  position:absolute;
+  inset:0;
+  border-radius:var(--cardRadius);
+  backface-visibility:hidden;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 8px 20px rgba(0,0,0,.35);
+}
+
+.cardFront{
+  background:
+    radial-gradient(circle at 30% 20%, rgba(165,255,251,.22), transparent 45%),
+    radial-gradient(circle at 80% 75%, rgba(255,77,109,.18), transparent 42%),
+    url('assets/CARDBACK.jpg') center/cover no-repeat;
+}
+
+.cardBack{
+  transform:rotateY(180deg);
+  background:rgba(17,18,37,.92);
+}
+
+.cardBack img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.card.isFlipped .cardInner{transform:rotateY(180deg)}
+.card.isMatched{cursor:default}
+.card.isMatched .cardFace{border-color:rgba(110,168,254,.55)}
+
+/* 1s BIG glow when a pair is found (no extra rotation/flip) */
+.card.matchGlow::after{
+  content:"";
+  position:absolute;
+  inset:-46px;
+  border-radius:calc(var(--cardRadius) + 46px);
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(165,255,251,.95), transparent 55%),
+    radial-gradient(circle at 40% 65%, rgba(110,168,254,.85), transparent 60%),
+    radial-gradient(circle at 70% 70%, rgba(255,77,109,.72), transparent 62%);
+  filter:blur(10px);
+  opacity:0;
+  animation:matchHalo 1s ease-out;
+}
+
+/* Mobile: keep the glow (lighter) so players still get feedback */
+body.isMobile .card.matchGlow::after{
+  inset:-26px;
+  filter:blur(7px);
+}
+
+.card.matchGlow .cardFace{
+  animation:matchGlow 1s ease-out;
+}
+@keyframes matchGlow{
+  0%{box-shadow:0 8px 20px rgba(0,0,0,.35)}
+  18%{
+    box-shadow:
+      0 0 0 6px rgba(165,255,251,1),
+      0 0 120px 30px rgba(110,168,254,.98),
+      0 0 180px 60px rgba(255,77,109,.80),
+      0 0 240px 90px rgba(165,255,251,.38);
+  }
+  70%{
+    box-shadow:
+      0 0 0 5px rgba(110,168,254,1),
+      0 0 100px 24px rgba(165,255,251,.90),
+      0 0 160px 52px rgba(110,168,254,.55),
+      0 0 220px 80px rgba(165,255,251,.30);
+  }
+  100%{box-shadow:0 8px 20px rgba(0,0,0,.35)}
+}
+
+@keyframes matchHalo{
+  0%{opacity:0;transform:scale(.65)}
+  22%{opacity:1;transform:scale(1)}
+  100%{opacity:0;transform:scale(1.08)}
+}
+
+.hud.isLoading{opacity:.85}
+
+/* Menu */
+.menu{
+  position:fixed;
+  inset:0;
+  z-index:50;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:22px;
+  background:transparent;
+  overflow:hidden;
+}
+
+/* Smartphone menu background fallback (no video) */
+body.isMobile .menuVideo{display:none;}
+body.isMobile .menu::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  background:center/cover no-repeat url("assets/memory50_framebgmenu.jpg");
+  transform:scale(1.08);
+  filter:contrast(1.05) saturate(1.05);
+  animation:mobileMenuBg 6.5s ease-in-out infinite;
+}
+@keyframes mobileMenuBg{
+  0%{transform:scale(1.10) translate3d(0,0,0); filter:contrast(1.06) saturate(1.06) brightness(.95);} 
+  45%{transform:scale(1.16) translate3d(-1.2%, -1.4%,0); filter:contrast(1.07) saturate(1.07) brightness(1);} 
+  100%{transform:scale(1.10) translate3d(0,0,0); filter:contrast(1.06) saturate(1.06) brightness(.95);} 
+}
+
+.menuVideo{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:0;
+  filter:none;
+  transform:scale(1.06);
+}
+.menuVignette{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,.045),
+      rgba(255,255,255,.045) 1px,
+      rgba(0,0,0,0) 4px,
+      rgba(0,0,0,0) 8px
+    );
+  opacity:.25;
+}
+
+
+
+
+
+
+.menuCard{
+  width:min(520px, 92%);
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.12);
+  /* 35% opacity so the menu video is clearly visible */
+  background:linear-gradient(180deg, rgba(14,15,30,.35), rgba(8,8,14,.35));
+  box-shadow:0 20px 60px rgba(0,0,0,.55);
+  padding:22px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+  z-index:2;
+}
+.menuCard::before{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  background:
+    radial-gradient(600px 240px at 10% 0%, rgba(110,168,254,.22), transparent 60%),
+    radial-gradient(500px 240px at 90% 100%, rgba(255,77,109,.18), transparent 60%);
+  pointer-events:none;
+}
+.menuBadge{
+  font-family:Orbitron, Nunito, system-ui;
+  font-weight:900;
+  letter-spacing:2.2px;
+  font-size:12px;
+  color:rgba(241,242,255,.85);
+  text-transform:uppercase;
+}
+.logoTitle{
+  margin:10px auto 6px auto;
+  width:min(520px, 92%);
+  height:auto;
+  display:block;
+  filter:drop-shadow(0 0 18px rgba(255,77,109,.28)) drop-shadow(0 0 34px rgba(110,168,254,.20));
+  /* A bit less dynamic movement */
+  animation:logoFloat 2.1s ease-in-out infinite, logoGlitch 5.0s steps(2,end) infinite, logoFlicker 7.5s steps(2,end) infinite;
+  transform-origin:center;
+}
+.menuSubtitle{
+  margin:0 auto 18px auto;
+  max-width:55ch;
+  font-size:18px;
+  color:var(--muted);
+}
+.menuButtons{display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.menuStatus{margin-top:14px;color:rgba(165,255,251,.85);font-family:Orbitron, Nunito, system-ui;font-size:13px;letter-spacing:1.2px;text-transform:uppercase}
+
+.warning{color:rgba(255,77,109,.95)}
+
+/* Modal */
+.modal{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:22px}
+.modal.isOpen{display:flex}
+.modalBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.62)}
+.modalCard{
+  position:relative;
+  width:min(640px, 100%);
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.12);
+  background:linear-gradient(180deg, rgba(14,15,30,.96), rgba(8,8,14,.96));
+  box-shadow:0 20px 60px rgba(0,0,0,.55);
+  padding:16px;
+}
+.modalHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 8px 10px 8px;border-bottom:1px solid rgba(255,255,255,.10)}
+.modalTitle{font-family:Orbitron, Nunito, system-ui;font-weight:900;letter-spacing:1.2px;font-size:18px}
+.modalBody{padding:14px 10px 10px 10px;font-size:18px;line-height:1.4}
+.modalBody ol{margin:0;padding-left:20px}
+.modalBody li{margin:10px 0}
+.muted{color:var(--muted)}
+.modalFooter{display:flex;justify-content:flex-end;padding:8px 10px 6px 10px}
+
+/* Mural */
+.muralCard{width:min(920px, 100%)}
+.muralGrid{
+  display:grid;
+  grid-template-columns:repeat(10, minmax(0, 1fr));
+  gap:10px;
+  margin-top:12px;
+}
+@media (max-width:900px){
+  .muralGrid{grid-template-columns:repeat(8, minmax(0, 1fr))}
+}
+@media (max-width:720px){
+  .muralGrid{grid-template-columns:repeat(6, minmax(0, 1fr))}
+}
+@media (max-width:520px){
+  .muralGrid{grid-template-columns:repeat(5, minmax(0, 1fr))}
+}
+
+.muralTile{
+  width:100%;
+  aspect-ratio:1/1;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(17,18,37,.82);
+  overflow:hidden;
+  cursor:pointer;
+  padding:0;
+  position:relative;
+}
+.muralTile img{width:100%;height:100%;object-fit:cover;display:block}
+.muralTile.isLocked{cursor:not-allowed;opacity:.85}
+.muralTile.isLocked img{filter:saturate(.75) contrast(.95)}
+.muralTile:not(.isLocked):hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(0,0,0,.35)}
+
+/* Special golden halo for 050 (gift) when unlocked */
+.muralTile.isGolden::before{
+  content:"";
+  position:absolute;
+  inset:-8px;
+  background:radial-gradient(circle at 50% 40%, rgba(255,215,92,.55), rgba(255,215,92,.0) 55%);
+  filter:blur(10px);
+  pointer-events:none;
+  animation:goldPulse 1.4s ease-in-out infinite;
+}
+.muralTile.isGolden::after{
+  content:"";
+  position:absolute;
+  inset:3px;
+  border-radius:12px;
+  border:2px solid rgba(255,215,92,.72);
+  box-shadow:0 0 18px rgba(255,215,92,.55), 0 0 42px rgba(255,215,92,.32);
+  pointer-events:none;
+  animation:goldStroke 1.4s ease-in-out infinite;
+}
+.muralTile.isGolden img{
+  box-shadow:0 0 0 1px rgba(255,215,92,.22) inset, 0 0 26px rgba(255,215,92,.28);
+}
+@keyframes goldPulse{
+  0%,100%{opacity:.70;transform:scale(1)}
+  50%{opacity:1;transform:scale(1.03)}
+}
+
+@keyframes goldStroke{
+  0%,100%{opacity:.85;filter:blur(0px)}
+  50%{opacity:1;filter:blur(.2px)}
+}
+@keyframes goldStroke{
+  0%,100%{opacity:.75;transform:scale(1)}
+  50%{opacity:1;transform:scale(1.01)}
+}
+.muralCode{
+  position:absolute;
+  left:8px;
+  top:8px;
+  bottom:auto;
+  font-family:Orbitron, Nunito, system-ui;
+  font-size:11px;
+  letter-spacing:.6px;
+  padding:4px 6px;
+  border-radius:10px;
+  background:rgba(0,0,0,.52);
+  border:1px solid rgba(255,255,255,.10);
+  color:rgba(241,242,255,.86);
+}
+.muralTile .lockTag{
+  position:absolute;
+  inset:auto 0 0 0;
+  padding:6px 8px;
+  font-family:Orbitron, Nunito, system-ui;
+  font-size:10px;
+  letter-spacing:1px;
+  background:rgba(0,0,0,.55);
+  color:rgba(241,242,255,.85);
+}
+
+/* Bottom controls (Restart) */
+.bottomControls{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:46px;
+  z-index:12;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  padding:10px 14px;
+  pointer-events:none;
+}
+.bottomControls .btn{pointer-events:auto}
+
+/* Mobile: keep controls on screen (no overlap with footer) */
+body.isMobile .bottomControls{bottom:12px;padding:8px 10px;gap:8px}
+body.isMobile .btn{padding:9px 11px;border-radius:12px}
+
+/* Level complete overlay */
+.completeOverlay{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;padding:22px}
+.completeOverlay.isOpen{display:flex}
+.completeBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.68);backdrop-filter:blur(8px)}
+.completeCard{
+  position:relative;
+  width:min(680px, 100%);
+  border-radius:26px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(14,15,30,.96), rgba(8,8,14,.96));
+  box-shadow:0 26px 80px rgba(0,0,0,.62);
+  padding:20px 18px 18px 18px;
+  text-align:center;
+  overflow:hidden;
+}
+.completeCard::before{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  background:
+    radial-gradient(640px 260px at 20% 0%, rgba(110,168,254,.24), transparent 60%),
+    radial-gradient(520px 260px at 90% 100%, rgba(255,77,109,.20), transparent 60%);
+  pointer-events:none;
+}
+.completeLogo{
+  width:min(420px, 80%);
+  height:auto;
+  filter:drop-shadow(0 0 22px rgba(110,168,254,.40)) drop-shadow(0 0 30px rgba(255,77,109,.28));
+  transform-origin:center;
+  animation:completePop 900ms cubic-bezier(.2,1.1,.2,1) both, completeWiggle 1.8s ease-in-out 900ms infinite;
+}
+.completeText{
+  /* Removed per request: no "¡nivel completado!" text */
+  display:none;
+}
+.completeBtn{width:100%;max-width:360px;margin:0 auto}
+
+@keyframes completePop{
+  0%{transform:scale(.4) rotate(-12deg);opacity:0}
+  60%{transform:scale(1.08) rotate(3deg);opacity:1}
+  100%{transform:scale(1) rotate(0deg);opacity:1}
+}
+@keyframes completeWiggle{
+  0%,100%{transform:scale(1) rotate(0deg)}
+  50%{transform:scale(1.02) rotate(1.2deg)}
+}
+
+/* Footer */
+.footer{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  z-index:12;
+  padding:10px 14px;
+  text-align:center;
+  font-family:Orbitron, Nunito, system-ui;
+  font-size:12px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:rgba(241,242,255,.78);
+  background:rgba(4,5,10,.62);
+  backdrop-filter:blur(10px);
+  border-top:1px solid rgba(255,255,255,.10);
+}
+.footer a{color:rgba(165,255,251,.92);text-decoration:none}
+.footer a:hover{text-decoration:underline}
+
+/* Keep content above footer */
+main{padding-bottom:120px}
+
+/* Mobile: avoid vertical scroll while playing */
+body.isMobile:not(.hasMenu) .footer{display:none}
+body.isMobile:not(.hasMenu) main{padding-bottom:18px}
+
+/* Timer */
+.timerWrap{
+  width:100%;
+  display:flex;
+  justify-content:center;
+  padding:8px 12px 6px;
+}
+.timer{
+  font-family:Orbitron, Nunito, system-ui;
+  font-weight:900;
+  font-size:clamp(34px, 5.2vw, 64px);
+  letter-spacing:2px;
+  padding:8px 18px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(10,11,22,.62);
+  backdrop-filter:blur(10px);
+  text-shadow:0 0 18px rgba(110,168,254,.55), 0 0 30px rgba(165,255,251,.22);
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+  transform:translateZ(0);
+}
+
+body.isMobile .timerWrap{padding:6px 10px 4px}
+body.isMobile .timer{
+  font-size:clamp(24px, 6vw, 36px);
+  padding:6px 12px;
+  box-shadow:none;
+  text-shadow:none;
+  backdrop-filter:none;
+}
+
+/* Mobile: lighter timer */
+body.isMobile .timer{font-size:clamp(26px, 6vw, 40px);box-shadow:none}
+.timer.isTick{
+  animation:timerTick 140ms ease-out;
+}
+@keyframes timerTick{
+  0%{transform:translateY(0) scale(1)}
+  45%{transform:translateY(-3px) scale(1.02)}
+  100%{transform:translateY(0) scale(1)}
+}
+
+/* Footer layout + audio controls */
+.footerRow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+}
+.footerText{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.audioControls{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  justify-content:center;
+}
+.audioIcon{
+  width:38px;
+  height:34px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(17,18,37,.55);
+  color:rgba(241,242,255,.92);
+  cursor:pointer;
+  box-shadow:0 8px 18px rgba(0,0,0,.32);
+}
+.audioIcon:hover{filter:brightness(1.08)}
+.volumeSlider{
+  width:min(220px, 36vw);
+}
+
+@media (max-width:520px){
+  .footerRow{flex-direction:column;gap:8px}
+}
+
+/* Intro (unskippable) */
+.introGate{
+  position:fixed;
+  inset:0;
+  z-index:90;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:22px;
+  background:#000;
+  backdrop-filter:none;
+}
+.introGate.isHidden{display:none}
+.introCard{
+  width:min(680px, 100%);
+  border-radius:26px;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+  padding:0;
+  text-align:center;
+}
+.introTitle{
+  font-family:Orbitron, Nunito, system-ui;
+  font-weight:900;
+  letter-spacing:2px;
+  font-size:22px;
+}
+.introText{color:var(--muted);margin:10px 0 14px 0;font-size:18px}
+.introHint{margin-top:12px;color:rgba(241,242,255,.75);font-family:Orbitron, Nunito, system-ui;font-size:12px;letter-spacing:1px;text-transform:uppercase}
+.introVideo{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:0;
+  opacity:0;
+  transition:opacity .2s ease;
+}
+.introGate.isPlaying .introVideo{opacity:1;}
+/* Menu "Discover" link: 1 line on desktop, 3 lines on mobile */
+.discoverLine{display:block; width:100%; text-align:center; line-height:1.05}
+body.isMobile .discoverLine{display:block; width:100%; text-align:center; line-height:1.05}
+.introGate .introCard{position:relative; z-index:2;}
+.introGate.isPlaying .introCard{display:none;}
+.introGate::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:radial-gradient(circle at 50% 35%, rgba(0,0,0,.15), rgba(0,0,0,.75) 70%);
+}
+.introGate.isPlaying::before{background:radial-gradient(circle at 50% 35%, rgba(0,0,0,.05), rgba(0,0,0,.55) 70%);}
+
+/* Smartphone intro fallback (2s full-screen image animation)
+   - Activated by JS adding .isActive to #introMobileFrame and body.isMobile.
+*/
+.introMobileFrame{
+  position:absolute;
+  inset:0;
+  z-index:3;
+  opacity:0;
+  pointer-events:none;
+  background:center/cover no-repeat url("assets/disturbinggames_frameintroV.jpg");
+  transform:scale(1.06);
+  filter:contrast(1.08) saturate(1.05);
+}
+body.isMobile .introVideo{display:none;}
+
+/* Smartphone: when any menu/modal is open, never allow the game board to show through. */
+body.isMobile.hasMenu #hud,
+body.isMobile.hasMenu main,
+body.isMobile.hasMenu #board,
+body.isMobile.hasMenu .timerWrap,
+body.isMobile.hasMenu .bottomControls,
+body.isMobile.hasMenu #status,
+body.isMobile.hasMenu footer{
+  display:none !important;
+}
+
+/* Smartphone: modals must be scrollable (How to play + Mural) */
+body.isMobile .modalCard{
+  max-height:92vh;
+  overflow:hidden;
+}
+body.isMobile .modalBody{
+  max-height:70vh;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  font-size:15px;
+  line-height:1.35;
+}
+
+/* Smartphone: Mural should be scrollable and without numeric badges */
+body.isMobile .muralCode{display:none;}
+body.isMobile .introMobileFrame.isActive{
+  opacity:1;
+  animation:mobileIntro 2s ease-out forwards;
+}
+@keyframes mobileIntro{
+  0%{transform:scale(1.10); filter:contrast(1.10) saturate(1.10) brightness(.9);}
+  60%{transform:scale(1.04); filter:contrast(1.08) saturate(1.06) brightness(1);}
+  100%{transform:scale(1.00); filter:contrast(1.05) saturate(1.04) brightness(1);}
+}
+
+/* Menu video overlays */
+.menuVignette{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(0,0,0,.25), rgba(0,0,0,.92) 70%),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,.03),
+      rgba(255,255,255,.03) 1px,
+      rgba(0,0,0,0) 3px,
+      rgba(0,0,0,0) 6px
+    );
+  opacity:.92;
+}
+
+/* Bottom buttons emphasis */
+#reloadBtn{
+  background:linear-gradient(180deg, rgba(255,77,109,.98), rgba(168,18,42,.98));
+  border-color:rgba(255,77,109,.85);
+  color:#000;
+  text-shadow:none;
+  box-shadow:0 10px 26px rgba(255,77,109,.18), 0 0 34px rgba(255,77,109,.12);
+}
+#reloadBtn:hover{filter:brightness(1.04)}
+
+/* Final screen */
+.finalMessage{
+  margin:14px auto 12px auto;
+  max-width:60ch;
+  color:rgba(241,242,255,.92);
+  font-size:18px;
+  line-height:1.35;
+}
+.totalTime{
+  margin:8px auto 14px auto;
+  font-family:Orbitron, Nunito, system-ui;
+  font-weight:900;
+  letter-spacing:1.6px;
+  font-size:clamp(22px, 3.6vw, 34px);
+  padding:10px 16px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(10,11,22,.62);
+  text-transform:uppercase;
+  text-shadow:0 0 18px rgba(110,168,254,.55), 0 0 30px rgba(165,255,251,.22);
+}
+
+.warning{
+  color:rgba(255,215,92,.92);
+}
+
+.goldNote{color:rgba(255,211,108,.95)!important;font-weight:900;letter-spacing:.6px;text-transform:uppercase;}
+
+
+
+@keyframes logoFloat{
+  0%{transform:translate3d(0,0,0) rotate(-1.1deg) scale(1);} 
+  25%{transform:translate3d(5px,-6px,0) rotate(1.4deg) scale(1.02);} 
+  55%{transform:translate3d(-4px,-8px,0) rotate(-1.6deg) scale(1.03);} 
+  78%{transform:translate3d(3px,-4px,0) rotate(1.8deg) scale(1.015);} 
+  100%{transform:translate3d(0,0,0) rotate(-1.1deg) scale(1);} 
+}
+@keyframes logoGlitch{
+  0%, 70%, 100%{filter:drop-shadow(0 0 18px rgba(255,77,109,.28)) drop-shadow(0 0 34px rgba(110,168,254,.20));} 
+  71%{filter:drop-shadow(-14px 0 18px rgba(110,168,254,.46)) drop-shadow(14px 0 18px rgba(255,77,109,.46));} 
+  72%{filter:drop-shadow(14px 0 18px rgba(110,168,254,.46)) drop-shadow(-14px 0 18px rgba(255,77,109,.46));} 
+  73%{filter:drop-shadow(0 0 34px rgba(255,215,0,.34)) drop-shadow(0 0 64px rgba(110,168,254,.26));}
+  74%{filter:drop-shadow(-10px -3px 20px rgba(165,255,251,.40)) drop-shadow(10px 3px 20px rgba(255,77,109,.40));}
+}
+
+@keyframes logoFlicker{
+  0%, 86%, 100%{opacity:1;} 
+  87%{opacity:.85;} 
+  88%{opacity:1;} 
+  89%{opacity:.78;} 
+  90%{opacity:1;}
+}
+
+
+/* v1.1 - Intro ICO + desktop-only lock + menu volume */
+.introStartWrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.introStartBtn{width:min(320px, 86vw)}
+.introIco{width:min(320px, 86vw);height:auto;image-rendering:auto;filter:drop-shadow(0 10px 18px rgba(0,0,0,.55))}
+.desktopOnlyOverlay{position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;touch-action:none}
+.desktopOnlyImg{max-width:100vw;max-height:100vh;object-fit:contain}
+.menuAudio{margin-top:14px;display:flex;justify-content:center}
+.menuAudio .audioControls{background:rgba(0,0,0,.35);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:10px 12px}
+
+
+/* =========================================================
+   MEMORY50 v2.1 APP / STANDALONE OVERRIDES
+   ========================================================= */
+body.isEmbedded .discoverLink{display:none!important}
+body.isEmbedded .footer a{pointer-events:none;text-decoration:none}
+
+/* Intro: only this video can be skipped. */
+.introSkipHint{
+  position:absolute;left:50%;bottom:28px;z-index:5;transform:translateX(-50%);
+  padding:8px 14px;border:1px solid rgba(165,255,251,.24);border-radius:999px;
+  background:rgba(0,0,0,.48);color:rgba(241,242,255,.88);
+  font-family:Orbitron,Nunito,system-ui;font-size:11px;font-weight:900;letter-spacing:1.6px;
+  opacity:0;pointer-events:none;transition:opacity .25s ease;
+  text-shadow:0 0 12px rgba(110,168,254,.55)
+}
+.introGate.isPlaying .introSkipHint{opacity:.92}
+
+/* Mural is now a visual discovery gallery: posters never navigate away. */
+.muralTile:not(.isLocked){cursor:zoom-in}
+.muralTile:not(.isLocked):hover{transform:translateY(-2px) scale(1.015);box-shadow:0 12px 34px rgba(0,0,0,.48),0 0 22px rgba(110,168,254,.18)}
+.muralCard{max-height:92vh;overflow:hidden}
+.muralCard .modalBody{max-height:72vh;overflow:auto}
+
+.posterViewer{
+  position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;
+  padding:24px;cursor:zoom-out;overflow:hidden
+}
+.posterViewer.isOpen{display:flex;animation:posterViewerIn .22s ease-out both}
+.posterViewerShade{position:absolute;inset:0;background:rgba(0,0,0,.94);backdrop-filter:blur(10px)}
+.posterViewerImg{
+  position:relative;z-index:2;display:block;max-width:94vw;max-height:92vh;width:auto;height:auto;
+  object-fit:contain;border-radius:10px;box-shadow:0 30px 90px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.13),0 0 38px rgba(110,168,254,.16);
+  animation:posterImageIn .26s cubic-bezier(.2,.8,.2,1) both
+}
+.posterViewerHint{
+  position:absolute;z-index:3;bottom:14px;left:50%;transform:translateX(-50%);white-space:nowrap;
+  padding:7px 12px;border-radius:999px;background:rgba(0,0,0,.58);border:1px solid rgba(255,255,255,.13);
+  color:rgba(241,242,255,.72);font:900 10px/1 Orbitron,Nunito,system-ui;letter-spacing:1px
+}
+@keyframes posterViewerIn{from{opacity:0}to{opacity:1}}
+@keyframes posterImageIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+
+/* Final reward: clear, celebratory and still keeps the GAME alive. */
+.secretRewardBody{text-align:center}
+.secretRewardEyebrow{font:900 12px/1 Orbitron,Nunito,system-ui;letter-spacing:2.4px;color:#ffd75c;margin:2px 0 14px}
+.secretRewardPoster{display:block;max-height:42vh;max-width:min(300px,75vw);width:auto;height:auto;margin:0 auto 14px;border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.65),0 0 34px rgba(255,215,92,.22)}
+.secretRewardTitle{font:900 clamp(19px,3vw,28px)/1.15 Orbitron,Nunito,system-ui;letter-spacing:1px;color:#fff;margin-bottom:12px;text-shadow:0 0 18px rgba(255,215,92,.28)}
+.secretRewardFooter{gap:10px;flex-wrap:wrap;justify-content:center}
+.secretRewardFooter .btn{min-width:210px}
+
+/* Lighter ambient background motion; avoids the old GPU-heavy feeling. */
+body::before{animation:bgDriftV21 12s ease-in-out infinite alternate;will-change:transform}
+@keyframes bgDriftV21{
+  0%{transform:scale(1.06) translate3d(-.8%,.5%,0)}
+  100%{transform:scale(1.10) translate3d(.8%,-.6%,0)}
+}
+.particles{opacity:.46}
+
+@media (prefers-reduced-motion:reduce){
+  body::before,.logoTitle,.completeLogo{animation:none!important}
+  .posterViewer.isOpen,.posterViewerImg{animation:none!important}
+}
+
+    </style>
+
+    <!-- Fun + horror/sci-fi typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Creepster&family=Orbitron:wght@500;700;900&family=Nunito:wght@500;700;900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Intro gate (v2.1: intro video skippable with click/tap; desktop game remains desktop-only) -->
+    <div id="introGate" class="introGate" aria-hidden="false">
+      <div class="introCard" role="dialog" aria-label="Introduccion">
+        <div class="introStartWrap">
+          <img class="introIco" src="ICO.ico" alt="ICO" />
+          <button id="introStartBtn" type="button" class="btn btnBig btnBlue introStartBtn">INICIAR</button>
+        </div>
+      </div>
+      <!-- Smartphone fallback: 2s full-screen image animation (no video) -->
+      <div id="introMobileFrame" class="introMobileFrame" aria-hidden="true"></div>
+      <video id="introVideo" class="introVideo" preload="auto" playsinline>
+        <!-- Preferimos WebM (desktop). MP4 queda como fallback (iOS/Safari). -->
+        <source src="assets/introdisturbinggames.webm" type="video/webm" /></video>
+      <div id="introSkipHint" class="introSkipHint">CLIC / TOQUE PARA OMITIR</div>
+    </div>
+
+    <!-- Desktop-only lock (shown on mobile after INICIAR) -->
+    <div id="desktopOnlyOverlay" class="desktopOnlyOverlay" aria-hidden="true" style="display:none">
+      <img class="desktopOnlyImg" src="assets/EXCLUSIVO_DESKTOP.jpg" alt="Exclusivo Desktop" />
+    </div>
+
+    <!-- Floating particles layer -->
+    <canvas id="particles" class="particles" aria-hidden="true"></canvas>
+    <div class="grunge" aria-hidden="true"></div>
+
+    <!-- Start menu (and all submenus/modals) -->
+    <div id="menu" class="menu" style="display:none" role="dialog" aria-label="Menu principal">
+      <video
+        id="menuVideo"
+        class="menuVideo"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+      >
+        <!-- Preferimos WebM (desktop). MP4 queda como fallback (iOS/Safari). -->
+        <source src="assets/videomenu.webm" type="video/webm" /></video>
+      <div class="menuVignette" aria-hidden="true"></div>
+
+      <div class="menuCard">
+        <img class="logoTitle" src="assets/logomemory50.png" alt="MEMORY50" />
+
+        <div class="menuButtons">
+          <button id="playBtn" type="button" class="btn btnBig btnGold" disabled>JUGAR</button>
+          <button id="muralBtn" type="button" class="btn btnBig" disabled>MURAL</button>
+          <button id="howBtn" type="button" class="btn btnBig">COMO JUGAR</button>
+          <button id="secretBtn" type="button" class="btn btnBig btnBlue" style="display:none">REGALO SECRETO</button>
+          <a
+            class="btn btnBig btnLink discoverLink"
+            href="https://www.disturbingstories.com"
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="discoverLine">DESCUBRE</span>
+            <span class="discoverLine">DISTURBING</span>
+            <span class="discoverLine">STORIES</span>
+          </a>
+        </div>
+
+        <div class="menuAudio">
+          <div class="audioControls" aria-label="Control de audio">
+            <button id="menuMuteBtn" type="button" class="audioIcon" aria-label="Mute">🔊</button>
+            <input id="menuVolumeSlider" class="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.65" aria-label="Volumen" />
+          </div>
+        </div>
+
+        <div id="menuStatus" class="menuStatus" aria-live="polite">Cargando...</div>
+      </div>
+    </div>
+
+    <!-- Mural modal -->
+    <div id="muralModal" class="modal" aria-hidden="true">
+      <div class="modalBackdrop" data-close="true"></div>
+      <div class="modalCard muralCard" role="dialog" aria-label="Mural">
+        <div class="modalHeader">
+          <div class="modalTitle">Mural</div>
+          <button id="closeMuralBtn" type="button" class="iconBtn" aria-label="Cerrar">✕</button>
+        </div>
+        <div class="modalBody">
+          <p class="muted">
+            Desbloquea los pósters completando los niveles.<br />
+            Haz clic en cualquier póster desbloqueado para verlo completo. Vuelve a pulsarlo para regresar al mural.
+          </p>
+          <div id="muralGrid" class="muralGrid" aria-label="Mural de imagenes"></div>
+        </div>
+        <div class="modalFooter">
+          <button type="button" class="btn btnPrimary" data-close="true">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fullscreen poster viewer (v2.1) -->
+    <div id="posterViewer" class="posterViewer" aria-hidden="true">
+      <div class="posterViewerShade"></div>
+      <img id="posterViewerImg" class="posterViewerImg" alt="Póster desbloqueado" />
+      <div class="posterViewerHint">CLIC / TOQUE PARA VOLVER · ESC</div>
+    </div>
+
+    <!-- Secret modal -->
+    <div id="secretModal" class="modal" aria-hidden="true">
+      <div class="modalBackdrop" data-close="true"></div>
+      <div class="modalCard" role="dialog" aria-label="Regalo secreto">
+        <div class="modalHeader">
+          <div class="modalTitle">Regalo secreto</div>
+          <button id="closeSecretBtn" type="button" class="iconBtn" aria-label="Cerrar">✕</button>
+        </div>
+        <div class="modalBody secretRewardBody">
+          <div class="secretRewardEyebrow">RECOMPENSA FINAL</div>
+          <img class="secretRewardPoster" src="assets/050.jpg" alt="Story #050 · Quincuaginta" />
+          <div class="secretRewardTitle">STORY #050 · QUINCUAGINTA</div>
+          <p>Has completado los 10 niveles de MEMORY50. Como recompensa, has obtenido acceso a esta <strong>Story exclusiva</strong>.</p>
+          <p id="secretAppNote" class="muted">Disturbing Stories App recibirá la finalización del GAME y gestionará el desbloqueo permanente para tu user.</p>
+        </div>
+        <div class="modalFooter secretRewardFooter">
+          <a id="secretStandaloneLink" class="btn btnPrimary btnLink" href="https://www.disturbingstories.com/050_nk64.html">ABRIR STORY #050</a>
+          <button type="button" class="btn" data-close="true">SEGUIR EN MEMORY50</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- How to play modal -->
+    <div id="howModal" class="modal" aria-hidden="true">
+      <div class="modalBackdrop" data-close="true"></div>
+      <div class="modalCard" role="dialog" aria-label="Como jugar">
+        <div class="modalHeader">
+          <div class="modalTitle">Como jugar</div>
+          <button id="closeHowBtn" type="button" class="iconBtn" aria-label="Cerrar">✕</button>
+        </div>
+        <div class="modalBody">
+          <ol>
+            <li>Haz clic en dos cartas para GIRARLAS.</li>
+            <li>Si son iguales, se quedan descubiertas.</li>
+            <li>Encuentra las 5 parejas para pasar al siguiente nivel.</li>
+            <li>Completa los 10 niveles y ¡consigue un regalo exclusivo!</li>
+          </ol>
+          <p class="muted">Puedes salir al MENU cuando quieras para revisar tus avances en el MURAL y luego CONTINUAR la partida normalmente.</p>
+          <p class="muted goldNote">IMPORTANTE: SI PRESIONAS REINICIAR, EL JUEGO VUELVE A EMPEZAR DESDE 0. RECUERDA QUE SI CIERRAS LA PAGINA, PIERDES TODO EL PROGRESO Y VOLVERAS A EMPEZAR.</p>
+        </div>
+        <div class="modalFooter">
+          <button type="button" class="btn btnPrimary" data-close="true">Entendido</button>
+        </div>
+      </div>
+    </div>
+
+    <header id="hud" class="hud" aria-live="polite">
+      <div class="hudLeft">
+        <img class="hudLogo" src="assets/logomemory50.png" alt="MEMORY50" />
+        <div class="meta">
+          <span>NIVEL <strong id="levelLabel">1</strong>/10</span>
+          <span class="dot">•</span>
+          <span>PAREJAS <strong id="pairsLabel">0/5</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <div id="status" class="status"></div>
+    <main>
+      <div id="board" class="board" aria-label="Tablero"></div>
+    </main>
+
+    <!-- Level timer (below board, above buttons) -->
+    <div class="timerWrap" aria-label="Cronometro">
+      <div id="timer" class="timer" aria-live="polite" aria-atomic="true">00:00.0</div>
+    </div>
+
+    <!-- Bottom controls -->
+    <div class="bottomControls" aria-label="Controles">
+      <button id="menuBtn" type="button" class="btn">MENU</button>
+      <button id="reloadBtn" type="button" class="btn btnDanger">REINICIAR</button>
+    </div>
+
+    <!-- Level complete overlay -->
+    <div id="completeOverlay" class="completeOverlay" aria-hidden="true">
+      <div class="completeBackdrop"></div>
+      <div class="completeCard" role="dialog" aria-label="Nivel completado">
+        <img id="completeLogo" class="completeLogo" src="assets/complete.png" alt="Completado" />
+        <div id="finalMessage" class="finalMessage" style="display:none"></div>
+        <div id="totalTime" class="totalTime" style="display:none"></div>
+        <div class="completeBtns">
+          <button id="completeNextBtn" type="button" class="btn btnBig btnPrimary completeBtn">
+            SIGUIENTE NIVEL
+          </button>
+          <button id="completeMenuBtn" type="button" class="btn btnBig completeBtn" style="display:none">
+            VOLVER AL MENU
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="footerRow">
+        <div class="footerText">
+          <div class="footerLine">© DISTURBING STORIES 2026 / <a href="https://www.josepmariasole.com/" target="_blank" rel="noopener">VIANDA VISUAL</a></div>
+          <div class="footerLine"><a href="https://www.disturbingstories.com/games" target="_blank" rel="noopener">DISTURBINGSTORIES.COM/GAMES</a></div>
+        </div>
+        <div class="audioControls" aria-label="Control de audio">
+          <button id="muteBtn" type="button" class="audioIcon" aria-label="Mute">🔊</button>
+          <input id="volumeSlider" class="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.65" aria-label="Volumen" />
+        </div>
+      </div>
+    </footer>
+
+    <script>
+// Memory game (10 levels) using images directly inside /assets as "000.jpg".
+// - Put your 50 image files in /assets.
+// - Filenames must be 3 digits, e.g. 001.jpg, 042.jpg, 300.jpg.
+// - The game will auto-detect which of 001..300 exist and build levels from them.
+
+const board = document.getElementById('board');
+const hud = document.getElementById('hud');
+const levelLabel = document.getElementById('levelLabel');
+const pairsLabel = document.getElementById('pairsLabel');
+const reloadBtn = document.getElementById('reloadBtn');
+const menuBtn = document.getElementById('menuBtn');
+
+// Intro
+const introGate = document.getElementById('introGate');
+const introStartBtn = document.getElementById('introStartBtn');
+const introVideo = document.getElementById('introVideo');
+const introMobileFrame = document.getElementById('introMobileFrame');
+const introHint = document.getElementById('introHint');
+const desktopOnlyOverlay = document.getElementById('desktopOnlyOverlay');
+
+// Menu background video
+const menuVideo = document.getElementById('menuVideo');
+
+// Audio UI (footer)
+const muteBtn = document.getElementById('muteBtn');
+const volumeSlider = document.getElementById('volumeSlider');
+// Audio UI (menu)
+const menuMuteBtn = document.getElementById('menuMuteBtn');
+const menuVolumeSlider = document.getElementById('menuVolumeSlider');
+
+// Timer UI
+const timerEl = document.getElementById('timer');
+
+// Menu / UI
+const menu = document.getElementById('menu');
+const playBtn = document.getElementById('playBtn');
+const muralBtn = document.getElementById('muralBtn');
+const howBtn = document.getElementById('howBtn');
+const secretBtn = document.getElementById('secretBtn');
+const howModal = document.getElementById('howModal');
+const closeHowBtn = document.getElementById('closeHowBtn');
+const menuStatus = document.getElementById('menuStatus');
+
+// Mural
+const muralModal = document.getElementById('muralModal');
+const muralGrid = document.getElementById('muralGrid');
+const closeMuralBtn = document.getElementById('closeMuralBtn');
+const posterViewer = document.getElementById('posterViewer');
+const posterViewerImg = document.getElementById('posterViewerImg');
+const introSkipHint = document.getElementById('introSkipHint');
+const IS_EMBEDDED = (() => { try { return window.self !== window.top; } catch (_) { return true; } })();
+try { document.body.classList.toggle('isEmbedded', IS_EMBEDDED); } catch (_) {}
+
+// Secret
+const secretModal = document.getElementById('secretModal');
+const closeSecretBtn = document.getElementById('closeSecretBtn');
+
+// Level complete overlay
+const completeOverlay = document.getElementById('completeOverlay');
+const completeNextBtn = document.getElementById('completeNextBtn');
+const completeMenuBtn = document.getElementById('completeMenuBtn');
+const completeLogo = document.getElementById('completeLogo');
+const finalMessage = document.getElementById('finalMessage');
+const totalTimeEl = document.getElementById('totalTime');
+
+// Final gift link (must be exact)
+const SECRET_GIFT_LINK = 'https://www.disturbingstories.com/050_nk64.html';
+
+// ---------------------------
+// Device detection (smartphone)
+// ---------------------------
+function detectSmartphone() {
+  // Heuristica simple y estable: pantalla pequena + puntero "coarse".
+  // Evitamos depender solo del userAgent.
+  try {
+    const small = window.matchMedia('(max-width: 900px)').matches;
+    const coarse = window.matchMedia('(pointer: coarse)').matches;
+    const touch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    // Fallback por userAgent (algunos navegadores reportan mal pointer/coarse)
+    const ua = (navigator.userAgent || '').toLowerCase();
+    const uaMobile = /(iphone|ipod|android|mobile|windows phone)/.test(ua);
+    return (small && (coarse || touch || uaMobile));
+  } catch (_) {
+    return false;
+  }
+}
+
+const isSmartphone = detectSmartphone();
+try { document.body.classList.toggle('isMobile', isSmartphone); } catch (_) {}
+
+// Copy adjustments for smartphone vs desktop UI
+try {
+  if (isSmartphone) {
+    // In smartphone we don't show the "unskippable video" hint because there is no video.
+    if (introHint) introHint.style.display = 'none';
+  }
+} catch (_) {}
+
+
+function openSecretGift(){
+  if (!completedAll) return;
+  openModal(secretModal, true);
+  const standaloneLink = document.getElementById('secretStandaloneLink');
+  const appNote = document.getElementById('secretAppNote');
+  if (standaloneLink) standaloneLink.style.display = IS_EMBEDDED ? 'none' : 'inline-flex';
+  if (appNote) {
+    appNote.textContent = IS_EMBEDDED
+      ? 'Recompensa enviada a Disturbing Stories App. La App gestionará el desbloqueo permanente de Quincuaginta para tu user.'
+      : 'Estás ejecutando MEMORY50 fuera de Disturbing Stories App. Puedes abrir la Story mediante el acceso web de recompensa.';
+  }
+}
+
+// Particles canvas
+const particlesCanvas = document.getElementById('particles');
+
+const LEVELS = 10;
+const PAIRS_PER_LEVEL = 5;
+const MAX_IMAGES = LEVELS * PAIRS_PER_LEVEL; // 50
+const DETECT_RANGE = 300; // filenames may be between 001 and 300
+
+// Backgrounds named like assets/bg01.jpg
+const BG_RANGE = 60;
+
+// Audio assets
+const MENU_BGM_SRC = 'assets/musicmenu.mp3';
+const MATCH_SFX = 'assets/parejasound01.mp3';
+const COMPLETE_SFX_ALWAYS = 'assets/exitosound01.mp3';
+const SUCCESS_SCAN_RANGE = 99; // supports future growth (exito01..exito99)
+
+// In-game music tracks named like assets/music1.mp3 (and/or assets/music01.mp3)
+const MUSIC_SCAN_RANGE = 99;
+
+// v2.1: inventario real del pack. Evita cientos de probes/404 en cada arranque.
+const STATIC_STORY_IMAGES = [
+  'assets/001.jpg',
+  'assets/002.jpg',
+  'assets/003.jpg',
+  'assets/004.jpg',
+  'assets/005.jpg',
+  'assets/006.jpg',
+  'assets/007.jpg',
+  'assets/009.jpg',
+  'assets/010.jpg',
+  'assets/012.jpg',
+  'assets/014.jpg',
+  'assets/015.jpg',
+  'assets/018.jpg',
+  'assets/020.jpg',
+  'assets/021.jpg',
+  'assets/028.jpg',
+  'assets/029.jpg',
+  'assets/032.jpg',
+  'assets/033.jpg',
+  'assets/036.jpg',
+  'assets/040.jpg',
+  'assets/046.jpg',
+  'assets/049.jpg',
+  'assets/050.jpg',
+  'assets/069.jpg',
+  'assets/083.jpg',
+  'assets/085.jpg',
+  'assets/097.jpg',
+  'assets/107.jpg',
+  'assets/137.jpg',
+  'assets/151.jpg',
+  'assets/152.jpg',
+  'assets/153.jpg',
+  'assets/154.jpg',
+  'assets/156.jpg',
+  'assets/157.jpg',
+  'assets/158.jpg',
+  'assets/159.jpg',
+  'assets/160.jpg',
+  'assets/163.jpg',
+  'assets/167.jpg',
+  'assets/168.jpg',
+  'assets/171.jpg',
+  'assets/178.jpg',
+  'assets/184.jpg',
+  'assets/238.jpg',
+  'assets/251.jpg',
+  'assets/274.jpg',
+  'assets/275.jpg',
+  'assets/276.jpg'
+];
+const STATIC_BACKGROUNDS = ['assets/bg01.jpg', 'assets/bg02.jpg', 'assets/bg03.jpg', 'assets/bg04.jpg', 'assets/bg05.jpg', 'assets/bg06.jpg', 'assets/bg07.jpg', 'assets/bg08.jpg', 'assets/bg09.jpg', 'assets/bg10.jpg'];
+const STATIC_SUCCESS_SOUNDS = ['assets/exito01.mp3', 'assets/exito02.mp3', 'assets/exito03.mp3', 'assets/exito04.mp3', 'assets/exito05.mp3', 'assets/exito06.mp3'];
+const STATIC_GAME_MUSIC = ['assets/music1.mp3', 'assets/music2.mp3'];
+
+
+function pad3(n) {
+  return String(n).padStart(3, '0');
+}
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(src);
+    img.onerror = () => reject(new Error('missing'));
+    img.src = src;
+  });
+}
+
+function loadAudio(src) {
+  return new Promise((resolve, reject) => {
+    const a = new Audio();
+    a.preload = 'auto';
+    const cleanup = () => {
+      a.oncanplaythrough = null;
+      a.onerror = null;
+    };
+    a.oncanplaythrough = () => {
+      cleanup();
+      resolve(src);
+    };
+    a.onerror = () => {
+      cleanup();
+      reject(new Error('missing'));
+    };
+    a.src = src;
+  });
+}
+
+function codeFromSrc(src) {
+  const m = /\/(\d{3})\.jpg$/i.exec(src);
+  return m ? m[1] : null;
+}
+
+// Nota: el progreso NO se persiste. Si recargas la página, se pierde (según requerimiento).
+// Mantendremos todo en memoria mientras la pestaña siga abierta.
+
+let unlockedSet = new Set();
+let completedAll = false;
+
+// Auto-detect up to MAX_IMAGES images that exist in /assets.
+// We scan 001..DETECT_RANGE with limited concurrency so it stays snappy.
+async function detectAvailableImages() {
+  const candidates = [];
+  for (let i = 1; i <= DETECT_RANGE; i++) {
+    candidates.push(`assets/${pad3(i)}.jpg`);
+  }
+
+  const found = [];
+  const concurrency = 18;
+  let idx = 0;
+
+  async function worker() {
+    while (idx < candidates.length && found.length < MAX_IMAGES) {
+      const my = candidates[idx++];
+      try {
+        await loadImage(my);
+        found.push(my);
+      } catch (_) {
+        // ignore missing files
+      }
+    }
+  }
+
+  const workers = Array.from({ length: concurrency }, () => worker());
+  await Promise.all(workers);
+  return found;
+}
+
+async function detectAvailableBackgrounds() {
+  const candidates = [];
+  for (let i = 1; i <= BG_RANGE; i++) {
+    candidates.push(`assets/bg${pad2(i)}.jpg`);
+  }
+
+  const found = [];
+  const concurrency = 12;
+  let idx = 0;
+
+  async function worker() {
+    while (idx < candidates.length) {
+      const my = candidates[idx++];
+      try {
+        await loadImage(my);
+        found.push(my);
+      } catch (_) {
+        // ignore
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  return found;
+}
+
+async function detectSuccessSounds() {
+  const candidates = [];
+  for (let i = 1; i <= SUCCESS_SCAN_RANGE; i++) {
+    candidates.push(`assets/exito${pad2(i)}.mp3`);
+  }
+  const found = [];
+  const concurrency = 8;
+  let idx = 0;
+
+  async function worker() {
+    while (idx < candidates.length) {
+      const my = candidates[idx++];
+      try {
+        await loadAudio(my);
+        found.push(my);
+      } catch (_) {
+        // ignore
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  return found;
+}
+
+async function detectGameMusicTracks() {
+  // Supports both music1.mp3 .. music99.mp3 and music01.mp3 .. music99.mp3
+  const candidates = [];
+  for (let i = 1; i <= MUSIC_SCAN_RANGE; i++) {
+    candidates.push(`assets/music${i}.mp3`);
+    candidates.push(`assets/music${pad2(i)}.mp3`);
+  }
+  // Deduplicate
+  const uniq = Array.from(new Set(candidates));
+  const found = [];
+  const concurrency = 8;
+  let idx = 0;
+
+  async function worker() {
+    while (idx < uniq.length) {
+      const my = uniq[idx++];
+      try {
+        await loadAudio(my);
+        found.push(my);
+      } catch (_) {
+        // ignore
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  return found;
+}
+
+function setStatus(text) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+}
+
+function setMenuStatus(text) {
+  if (menuStatus) menuStatus.textContent = text;
+}
+
+function clearBoard() {
+  board.innerHTML = '';
+}
+
+function isCompletedAll() {
+  return completedAll;
+}
+
+function openPosterViewer(src, code) {
+  if (!posterViewer || !posterViewerImg || !src) return;
+  posterViewerImg.src = src;
+  posterViewerImg.alt = `Story ${code || ''}`.trim();
+  posterViewer.classList.add('isOpen');
+  posterViewer.setAttribute('aria-hidden', 'false');
+}
+
+function closePosterViewer() {
+  if (!posterViewer) return;
+  posterViewer.classList.remove('isOpen');
+  posterViewer.setAttribute('aria-hidden', 'true');
+  if (posterViewerImg) posterViewerImg.removeAttribute('src');
+}
+
+function renderMural(pool) {
+  if (!muralGrid) return;
+  const unlocked = unlockedSet;
+  muralGrid.innerHTML = '';
+
+  // Must be sorted numerically ascending (by filename code),
+  // but the slot #50 should always be 050 (gift image) when present.
+  const sorted = pool
+    .slice()
+    .sort((a, b) => Number(codeFromSrc(a) || 0) - Number(codeFromSrc(b) || 0));
+  const idx050 = sorted.findIndex((s) => codeFromSrc(s) === '050');
+  if (idx050 >= 0) {
+    const [s050] = sorted.splice(idx050, 1);
+    sorted.push(s050);
+  }
+
+  sorted.forEach((src) => {
+    const code = codeFromSrc(src) || '???';
+    const isUnlocked = unlocked.has(code);
+    const is050 = code === '050';
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = `muralTile ${isUnlocked ? '' : 'isLocked'} ${isUnlocked && is050 ? 'isGolden' : ''}`.trim();
+    tile.disabled = !isUnlocked;
+
+    const img = document.createElement('img');
+    img.alt = isUnlocked ? `Imagen ${code}` : 'Bloqueado';
+    img.loading = 'lazy';
+    img.src = isUnlocked ? src : 'assets/CARDBACK.jpg';
+    tile.appendChild(img);
+
+    const badge = document.createElement('div');
+    badge.className = 'muralCode';
+    badge.textContent = code;
+    tile.appendChild(badge);
+
+    if (!isUnlocked) {
+      const lockTag = document.createElement('div');
+      lockTag.className = 'lockTag';
+      lockTag.textContent = 'BLOQUEADO';
+      tile.appendChild(lockTag);
+    } else {
+      // v2.1: los pósters del mural son recompensas visuales, nunca enlaces.
+      tile.addEventListener('click', () => openPosterViewer(src, code));
+    }
+
+    muralGrid.appendChild(tile);
+  });
+}
+
+function openModal(modal, on) {
+  if (!modal) return;
+  modal.classList.toggle('isOpen', on);
+  modal.setAttribute('aria-hidden', on ? 'false' : 'true');
+}
+
+function createCard(src, cardId) {
+  const btn = document.createElement('button');
+  btn.className = 'card';
+  btn.type = 'button';
+  btn.setAttribute('aria-label', 'Card');
+  btn.dataset.cardId = String(cardId);
+  btn.dataset.src = src;
+
+  const inner = document.createElement('div');
+  inner.className = 'cardInner';
+
+  const front = document.createElement('div');
+  front.className = 'cardFace cardFront';
+
+  const back = document.createElement('div');
+  back.className = 'cardFace cardBack';
+  const img = document.createElement('img');
+  img.alt = 'Memory image';
+  img.loading = 'lazy';
+  img.src = src;
+  back.appendChild(img);
+
+  inner.appendChild(front);
+  inner.appendChild(back);
+  btn.appendChild(inner);
+  return btn;
+}
+
+let allImages = [];
+let gamePool = [];
+let levelPools = [];
+let availableBgs = [];
+let levelBgs = [];
+let currentLevel = 0;
+let lock = false;
+let firstPick = null;
+let matches = 0;
+
+let ready = false;
+let playing = false;
+
+// Level times (ms) for final scoreboard
+let levelTimes = Array.from({ length: LEVELS }, () => 0);
+
+// ---------------------------
+// Audio (BGM + SFX)
+// ---------------------------
+let masterVolume = Number((volumeSlider?.value ?? menuVolumeSlider?.value) ?? 0.65);
+let isMuted = false;
+let menuBgm = null;
+let gameBgm = null;
+let audioUnlocked = false;
+
+let successSounds = [];
+let lastSuccessSound = null;
+
+let gameMusicTracks = [];
+let lastGameTrack = null;
+let gameRunTrack = null;
+
+function applyVolumeTo(audio) {
+  if (!audio) return;
+  audio.volume = isMuted ? 0 : masterVolume;
+}
+
+function updateMuteIcon() {
+  const icon = (isMuted || masterVolume === 0) ? '🔇' : '🔊';
+  if (muteBtn) {
+    muteBtn.textContent = icon;
+    muteBtn.setAttribute('aria-label', isMuted ? 'Unmute' : 'Mute');
+  }
+  if (menuMuteBtn) {
+    menuMuteBtn.textContent = icon;
+    menuMuteBtn.setAttribute('aria-label', isMuted ? 'Unmute' : 'Mute');
+  }
+}
+
+function syncVolumeSliders() {
+  try { if (volumeSlider) volumeSlider.value = String(masterVolume); } catch (_) {}
+  try { if (menuVolumeSlider) menuVolumeSlider.value = String(masterVolume); } catch (_) {}
+}
+
+function ensureMenuBgm() {
+  if (menuBgm) return menuBgm;
+  menuBgm = new Audio(MENU_BGM_SRC);
+  menuBgm.loop = true;
+  menuBgm.preload = 'auto';
+  applyVolumeTo(menuBgm);
+  return menuBgm;
+}
+
+function ensureGameBgm() {
+  if (gameBgm) return gameBgm;
+  gameBgm = new Audio();
+  gameBgm.loop = true;
+  gameBgm.preload = 'auto';
+  applyVolumeTo(gameBgm);
+  return gameBgm;
+}
+
+function stopAllBgm() {
+  try { menuBgm?.pause(); } catch (_) {}
+  try { gameBgm?.pause(); } catch (_) {}
+}
+
+function playMenuMusic() {
+  const a = ensureMenuBgm();
+  applyVolumeTo(a);
+  try { gameBgm?.pause(); } catch (_) {}
+  if (!audioUnlocked) return;
+  a.play().catch(() => {});
+}
+
+function pickRandomGameTrack() {
+  if (!gameMusicTracks.length) return null;
+  if (gameMusicTracks.length === 1) return gameMusicTracks[0];
+  let choice = null;
+  let guard = 0;
+  do {
+    choice = gameMusicTracks[Math.floor(Math.random() * gameMusicTracks.length)];
+    guard += 1;
+  } while (choice === lastGameTrack && guard < 25);
+  lastGameTrack = choice;
+  return choice;
+}
+
+function chooseGameRunTrack(){
+  gameRunTrack = pickRandomGameTrack();
+  return gameRunTrack;
+}
+
+function playGameMusicForRun() {
+  if (!gameRunTrack) chooseGameRunTrack();
+  const track = gameRunTrack;
+  const a = ensureGameBgm();
+  applyVolumeTo(a);
+  try { menuBgm?.pause(); } catch (_) {}
+  if (!track) return;
+  if (!audioUnlocked) return;
+  if (a.src !== track) a.src = track;
+  a.play().catch(() => {});
+}
+
+function tryStartAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  try {
+    // Start the right soundtrack depending on where we are.
+    if (document.body.classList.contains('hasMenu')) playMenuMusic();
+    else playGameMusicForRun();
+  } catch (_) {
+    audioUnlocked = false;
+  }
+}
+
+function playSfx(src) {
+  if (isMuted || masterVolume === 0) return;
+  try {
+    const a = new Audio(src);
+    a.preload = 'auto';
+    a.volume = masterVolume;
+    a.play().catch(() => {});
+  } catch (_) {}
+}
+
+function pickRandomSuccessSound() {
+  if (!successSounds.length) return null;
+  if (successSounds.length === 1) return successSounds[0];
+  let choice = null;
+  let guard = 0;
+  do {
+    choice = successSounds[Math.floor(Math.random() * successSounds.length)];
+    guard += 1;
+  } while (choice === lastSuccessSound && guard < 20);
+  lastSuccessSound = choice;
+  return choice;
+}
+
+function playLevelCompleteSfx() {
+  // Always play this one
+  playSfx(COMPLETE_SFX_ALWAYS);
+  // Plus one random "exitoXX.mp3" (never repeated back-to-back)
+  const s = pickRandomSuccessSound();
+  if (s) playSfx(s);
+}
+
+// Hook audio UI
+function onVolumeInput(val) {
+  masterVolume = Number(val);
+  syncVolumeSliders();
+  applyVolumeTo(menuBgm);
+  applyVolumeTo(gameBgm);
+  applyVolumeTo(introVideo);
+  updateMuteIcon();
+}
+
+function onToggleMute() {
+  isMuted = !isMuted;
+  applyVolumeTo(menuBgm);
+  applyVolumeTo(gameBgm);
+  applyVolumeTo(introVideo);
+  updateMuteIcon();
+}
+
+if (volumeSlider) {
+  volumeSlider.addEventListener('input', () => onVolumeInput(volumeSlider.value));
+}
+if (menuVolumeSlider) {
+  menuVolumeSlider.addEventListener('input', () => onVolumeInput(menuVolumeSlider.value));
+}
+if (muteBtn) {
+  muteBtn.addEventListener('click', onToggleMute);
+}
+if (menuMuteBtn) {
+  menuMuteBtn.addEventListener('click', onToggleMute);
+}
+syncVolumeSliders();
+updateMuteIcon();
+
+// Start BGM as soon as the browser allows it (first user interaction)
+window.addEventListener('pointerdown', tryStartAudio, { once: false, passive: true });
+// iOS Safari can be picky: also listen to touchstart.
+window.addEventListener('touchstart', tryStartAudio, { once: false, passive: true });
+
+// ---------------------------
+// Timer
+// ---------------------------
+let levelStartTs = 0;
+let timerInterval = null;
+
+function formatTime(ms) {
+  const totalTenths = Math.floor(ms / 100);
+  const tenths = totalTenths % 10;
+  const totalSeconds = Math.floor(totalTenths / 10);
+  const seconds = totalSeconds % 60;
+  const minutes = Math.floor(totalSeconds / 60);
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${tenths}`;
+}
+
+function startTimer() {
+  stopTimer();
+  levelStartTs = performance.now();
+  if (timerEl) timerEl.textContent = '00:00.0';
+  timerInterval = window.setInterval(() => {
+    const now = performance.now();
+    const d = now - levelStartTs;
+    if (timerEl) {
+      timerEl.textContent = formatTime(d);
+      timerEl.classList.remove('isTick');
+      // force reflow to restart animation
+      // eslint-disable-next-line no-unused-expressions
+      timerEl.offsetWidth;
+      timerEl.classList.add('isTick');
+    }
+  }, 100);
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+function stopTimerAndGetElapsedMs() {
+  stopTimer();
+  if (!levelStartTs) return 0;
+  const elapsed = Math.max(0, performance.now() - levelStartTs);
+  levelStartTs = 0;
+  return elapsed;
+}
+
+function formatTotal(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const s = totalSeconds % 60;
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const m = totalMinutes % 60;
+  const h = Math.floor(totalMinutes / 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+// ---------------------------
+// Intro video gate
+// ---------------------------
+function showIntroGate() {
+  if (!introGate) return;
+  introGate.classList.remove('isHidden');
+  introGate.setAttribute('aria-hidden', 'false');
+  // Keep menu hidden until intro ends
+  if (menu) menu.style.display = 'none';
+}
+
+function hideIntroGate() {
+  if (!introGate) return;
+  introGate.classList.add('isHidden');
+  introGate.setAttribute('aria-hidden', 'true');
+}
+
+function finishIntroEarly() {
+  if (!introGate || !introGate.classList.contains('isPlaying')) return;
+  try { introVideo?.pause(); } catch (_) {}
+  try { introVideo.currentTime = 0; } catch (_) {}
+  try { introGate.classList.remove('isPlaying'); } catch (_) {}
+  hideIntroGate();
+  showMenu();
+}
+
+function startIntroPlayback() {
+  // Smartphone: no reproducimos el videointro.
+  // El objetivo es: 1) desbloquear audio con el gesto del usuario, 2) avanzar SIEMPRE al menú.
+  if (isSmartphone) {
+    // v1.1: La app es EXCLUSIVA PARA DESKTOP.
+    // Tras pulsar INICIAR en un dispositivo mobile, mostramos una imagen a pantalla completa
+    // y bloqueamos cualquier interaccion.
+    tryStartAudio();
+    stopAllBgm();
+    try { introVideo?.pause(); } catch (_) {}
+    try { menuVideo?.pause(); } catch (_) {}
+    try { introGate?.style && (introGate.style.display = 'none'); } catch (_) {}
+    try {
+      if (desktopOnlyOverlay) {
+        desktopOnlyOverlay.style.display = 'flex';
+        desktopOnlyOverlay.setAttribute('aria-hidden', 'false');
+        // impedir scroll/gestos
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+      }
+    } catch (_) {}
+    return;
+  }
+
+  if (!introVideo) {
+    // Fallback: if no video, just go to menu
+    hideIntroGate();
+    showMenu();
+    return;
+  }
+
+  // This user gesture unlocks audio/video in most browsers
+  tryStartAudio();
+  stopAllBgm();
+  try { introGate?.classList.add("isPlaying"); } catch (_) {}
+  // En moviles (especialmente iOS), a veces es mas fiable iniciar el video en mute
+  // y desmutear justo despues de empezar.
+  try { introVideo.muted = true; } catch (_) {}
+
+  try {
+    introVideo.currentTime = 0;
+  } catch (_) {}
+
+  applyVolumeTo(introVideo);
+
+  // Watchdog (movil): algunos navegadores (especialmente iOS)
+  // pueden quedarse en "loading" sin disparar error ni empezar a reproducir.
+  // Si no llega a entrar en "playing" en un breve periodo, pasamos al menu.
+  let cleared = false;
+  let started = false;
+
+  const onErr = () => {
+    if (cleared) return;
+    cleared = true;
+    try { introVideo.removeEventListener('playing', onPlaying); } catch (_) {}
+    try { introVideo.removeEventListener('error', onErr); } catch (_) {}
+    try { introVideo.removeEventListener('stalled', onErr); } catch (_) {}
+    try { introVideo.removeEventListener('abort', onErr); } catch (_) {}
+    try { introVideo.removeEventListener('emptied', onErr); } catch (_) {}
+    if (watchdog) window.clearTimeout(watchdog);
+    try { introGate?.classList.remove('isPlaying'); } catch (_) {}
+    if (introStartBtn) introStartBtn.disabled = false;
+    hideIntroGate();
+    showMenu();
+  };
+
+  const onPlaying = () => {
+    started = true;
+    try { introVideo.removeEventListener('playing', onPlaying); } catch (_) {}
+    if (watchdog) window.clearTimeout(watchdog);
+  };
+
+  introVideo.addEventListener('playing', onPlaying, { once: true });
+  introVideo.addEventListener('error', onErr, { once: true });
+  introVideo.addEventListener('stalled', onErr, { once: true });
+  introVideo.addEventListener('abort', onErr, { once: true });
+  introVideo.addEventListener('emptied', onErr, { once: true });
+
+  const watchdog = window.setTimeout(() => {
+    // Si no ha llegado a "playing" (aunque paused sea false), no bloqueamos.
+    if (!started) onErr();
+  }, 1400);
+
+  try {
+    introVideo.play().then(() => {
+      // Intentamos recuperar audio una vez arrancado.
+      try {
+        introVideo.muted = isMuted;
+      } catch (_) {}
+    }).catch(onErr);
+  } catch (_) {
+    onErr();
+  }
+}
+
+function showMenu() {
+  if (!menu) return;
+  menu.style.display = 'flex';
+  document.body.classList.add('hasMenu');
+
+  // Menu soundtrack + menu bg video (desktop). En smartphone no usamos video.
+  playMenuMusic();
+  try {
+    if (menuVideo) {
+      menuVideo.muted = true;
+      if (!isSmartphone) {
+        menuVideo.play().catch(() => {});
+      } else {
+        // Aseguramos que quede parado para evitar estados "loading".
+        menuVideo.pause();
+      }
+    }
+  } catch (_) {}
+
+  // Update CTA depending on whether a game is in progress
+  if (playBtn) playBtn.textContent = playing ? 'CONTINUAR' : 'JUGAR';
+  if (gamePool.length) renderMural(gamePool);
+}
+
+function hideMenu() {
+  if (!menu) return;
+  menu.style.display = 'none';
+  document.body.classList.remove('hasMenu');
+
+  // Pause menu music/video when playing
+  try { menuBgm?.pause(); } catch (_) {}
+  try { menuVideo?.pause(); } catch (_) {}
+}
+
+function updateHud() {
+  levelLabel.textContent = String(currentLevel + 1);
+  pairsLabel.textContent = `${matches}/${PAIRS_PER_LEVEL}`;
+}
+
+function flip(card, on) {
+  card.classList.toggle('isFlipped', on);
+}
+
+function markMatched(card) {
+  card.classList.add('isMatched');
+  card.disabled = true;
+}
+
+function flashMatch(card) {
+  card.classList.add('matchGlow');
+  window.setTimeout(() => card.classList.remove('matchGlow'), 1000);
+}
+
+function isSameCard(a, b) {
+  return a && b && a.dataset.cardId === b.dataset.cardId;
+}
+
+function startLevel(levelIndex) {
+  currentLevel = levelIndex;
+  matches = 0;
+  firstPick = null;
+  lock = false;
+
+  clearBoard();
+  hideCompleteOverlay();
+  setStatus('Encuentra las 5 parejas.');
+
+  const five = levelPools[levelIndex];
+  const deck = shuffle([...five, ...five]);
+  deck.forEach((src, i) => {
+    const card = createCard(src, i);
+    board.appendChild(card);
+  });
+
+  updateHud();
+
+  // In-game music: one track per run (does NOT restart per level)
+  if (levelIndex === 0) {
+    playGameMusicForRun();
+  } else {
+    // Keep playing seamlessly; if it was paused for any reason, resume it.
+    try {
+      const a = ensureGameBgm();
+      applyVolumeTo(a);
+      if (audioUnlocked && a.paused) a.play().catch(() => {});
+    } catch (_) {}
+  }
+
+  // Start chrono for this level
+  startTimer();
+
+  // Apply background for the level (if available)
+  const bg = levelBgs[levelIndex];
+  if (bg) {
+    document.documentElement.style.setProperty('--levelBg', `url('${bg}')`);
+  } else {
+    document.documentElement.style.setProperty('--levelBg', 'none');
+  }
+}
+
+let gameCompletedEventSent = false;
+function emitGameCompleted() {
+  if (gameCompletedEventSent) return;
+  gameCompletedEventSent = true;
+  if (!IS_EMBEDDED) return;
+  try {
+    window.parent.postMessage({
+      type: 'DISTURBING_GAME_EVENT',
+      event: 'GAME_COMPLETED',
+      gameId: 'memory50'
+    }, '*');
+  } catch (err) {
+    console.warn('[MEMORY50 v2.1] GAME_COMPLETED no enviado', err);
+  }
+}
+
+function showCompleteOverlay(isLast, totalMs = 0) {
+  if (!completeOverlay || !completeNextBtn) return;
+  completeOverlay.classList.add('isOpen');
+  completeOverlay.setAttribute('aria-hidden', 'false');
+
+  // Default (non-final) visuals
+  if (completeLogo) completeLogo.src = 'assets/complete.png';
+  if (finalMessage) finalMessage.style.display = 'none';
+  if (totalTimeEl) totalTimeEl.style.display = 'none';
+  if (completeMenuBtn) completeMenuBtn.style.display = 'none';
+
+  // Play completion audio: always play "exitosound01" + one random "exitoXX" (never same twice)
+  playLevelCompleteSfx();
+
+  if (!isLast) {
+    completeNextBtn.textContent = 'SIGUIENTE NIVEL';
+  } else {
+    // FINAL: different logo + message + total time + two buttons
+    if (completeLogo) completeLogo.src = 'assets/completefinal.png';
+    completeNextBtn.textContent = 'VER REGALO SECRETO';
+    if (completeMenuBtn) completeMenuBtn.style.display = '';
+    if (finalMessage) {
+      finalMessage.style.display = '';
+      finalMessage.innerHTML =
+        '<strong>¡ENHORABUENA!</strong> Has superado los 10 niveles y has completado MEMORY50.' +
+        '<br><br>' +
+        'Como recompensa final, has conseguido acceso a la <strong>Story #050 · “Quincuaginta”</strong>.' +
+        '<br><br>' +
+        (IS_EMBEDDED
+          ? 'Disturbing Stories App ha recibido la finalización del GAME y gestionará esta recompensa para tu user.'
+          : 'En esta versión standalone podrás abrir el acceso web de recompensa desde REGALO SECRETO.');
+    }
+    if (totalTimeEl) {
+      totalTimeEl.style.display = '';
+      totalTimeEl.textContent = `TIEMPO TOTAL: ${formatTotal(totalMs)}`;
+    }
+  }
+}
+
+function hideCompleteOverlay() {
+  if (!completeOverlay) return;
+  completeOverlay.classList.remove('isOpen');
+  completeOverlay.setAttribute('aria-hidden', 'true');
+}
+
+function onCardClick(card) {
+  if (lock) return;
+  if (card.classList.contains('isMatched')) return;
+  if (card.classList.contains('isFlipped')) return;
+
+  flip(card, true);
+
+  if (!firstPick) {
+    firstPick = card;
+    return;
+  }
+
+  if (isSameCard(firstPick, card)) return;
+
+  const a = firstPick;
+  const b = card;
+  firstPick = null;
+
+  if (a.dataset.src === b.dataset.src) {
+    // Pair found: play sfx at the start of the match animation
+    playSfx(MATCH_SFX);
+    markMatched(a);
+    markMatched(b);
+    flashMatch(a);
+    flashMatch(b);
+    matches += 1;
+    updateHud();
+
+    if (matches === PAIRS_PER_LEVEL) {
+      const isLast = currentLevel === LEVELS - 1;
+      setStatus(isLast ? '¡Juego completado!' : '¡Nivel completado!');
+
+      // Stop chrono and store time for this level
+      const elapsedMs = stopTimerAndGetElapsedMs();
+      levelTimes[currentLevel] = elapsedMs;
+      const totalMs = levelTimes.reduce((sum, v) => sum + (Number(v) || 0), 0);
+      // Unlock the 5 images used in this level inside the Mural
+      const levelImgs = levelPools[currentLevel] || [];
+      levelImgs.forEach((src) => {
+        const code = codeFromSrc(src);
+        if (code) unlockedSet.add(code);
+      });
+
+      if (isLast) {
+        // Final gift: reveal secret submenu + also unlock story #50 (050.jpg)
+        unlockedSet.add('050');
+        completedAll = true;
+        if (secretBtn) secretBtn.style.display = '';
+        // v2.1: la App solo recibe el hecho verificable de que MEMORY50 se ha completado.
+        emitGameCompleted();
+      }
+
+      if (gamePool.length) renderMural(gamePool);
+      showCompleteOverlay(isLast, totalMs);
+    }
+    return;
+  }
+
+  lock = true;
+  setTimeout(() => {
+    flip(a, false);
+    flip(b, false);
+    lock = false;
+  }, 650);
+}
+
+function wireEvents() {
+  // Intro gate
+  // v0.8.1: el botón INICIAR NO debe depender de `ready`.
+  // En algunos móviles, si falla la detección/carga de recursos (o tarda mucho),
+  // `ready` puede quedarse en false y se quedaba bloqueado en INICIAR.
+  // Permitimos siempre pasar al menú; el propio menú controla si se puede JUGAR.
+  const onIntroStart = (ev) => {
+    try { ev?.preventDefault?.(); } catch (_) {}
+    try { ev?.stopPropagation?.(); } catch (_) {}
+    if (introStartBtn) introStartBtn.disabled = true;
+    startIntroPlayback();
+  };
+
+  // Escuchamos varios eventos para máxima compatibilidad (iOS/Safari a veces
+  // no dispara click de forma fiable en overlays).
+  introStartBtn?.addEventListener('pointerup', onIntroStart, { passive: false });
+  introStartBtn?.addEventListener('touchend', onIntroStart, { passive: false });
+  introStartBtn?.addEventListener('click', onIntroStart);
+
+  introVideo?.addEventListener('ended', () => {
+    try { introGate?.classList.remove('isPlaying'); } catch (_) {}
+    hideIntroGate();
+    showMenu();
+  });
+
+  // v2.1: ONLY the intro is skippable.
+  introGate?.addEventListener('pointerup', (ev) => {
+    if (!introGate.classList.contains('isPlaying')) return;
+    if (ev.target === introStartBtn) return;
+    finishIntroEarly();
+  });
+
+  board.addEventListener('click', (e) => {
+    const card = e.target.closest('.card');
+    if (!card || !board.contains(card)) return;
+    onCardClick(card);
+  });
+
+  completeNextBtn?.addEventListener('click', () => {
+    const isLast = currentLevel === LEVELS - 1;
+    hideCompleteOverlay();
+    if (!isLast) {
+      if (currentLevel < LEVELS - 1) startLevel(currentLevel + 1);
+      return;
+    }
+    // Last level => open the secret gift directly
+    openSecretGift();
+  });
+
+  completeMenuBtn?.addEventListener('click', () => {
+    hideCompleteOverlay();
+    showMenu();
+  });
+
+  completeOverlay?.addEventListener('click', (e) => {
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    if (t.classList.contains('completeBackdrop')) {
+      completeNextBtn?.click();
+    }
+  });
+
+  reloadBtn.addEventListener('click', () => {
+    // Simple and robust: brings back menu + re-detects assets.
+    window.location.reload();
+  });
+
+  playBtn?.addEventListener('click', () => {
+    /* ready gate removed for intro */
+    // Start new game once; afterwards this becomes "CONTINUAR".
+    if (!playing) {
+      playing = true;
+      // Reset level times for a fresh run
+      levelTimes = Array.from({ length: LEVELS }, () => 0);
+      // Pick a fresh music track for this run
+      gameRunTrack = null;
+      chooseGameRunTrack();
+      startLevel(0);
+    }
+    hideMenu();
+    // If we were already in a level, resume that level's music
+    if (playing && board.children.length && audioUnlocked) {
+      try {
+        const a = ensureGameBgm();
+        applyVolumeTo(a);
+        a.play().catch(() => {});
+      } catch (_) {}
+    }
+  });
+
+  // Allow returning to the main menu at any time (without losing progress)
+  menuBtn?.addEventListener('click', () => {
+    /* ready gate removed for intro */
+    showMenu();
+  });
+
+  muralBtn?.addEventListener('click', () => {
+    /* ready gate removed for intro */
+    if (gamePool.length) renderMural(gamePool);
+    openModal(muralModal, true);
+  });
+  closeMuralBtn?.addEventListener('click', () => openModal(muralModal, false));
+  muralModal?.addEventListener('click', (e) => {
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    if (t.dataset.close === 'true') openModal(muralModal, false);
+  });
+
+  posterViewer?.addEventListener('click', closePosterViewer);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && posterViewer?.classList.contains('isOpen')) closePosterViewer();
+  });
+
+  secretBtn?.addEventListener('click', () => {
+    openSecretGift();
+  });
+  closeSecretBtn?.addEventListener('click', () => openModal(secretModal, false));
+  secretModal?.addEventListener('click', (e) => {
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    if (t.dataset.close === 'true') openModal(secretModal, false);
+  });
+
+  howBtn?.addEventListener('click', () => openHowModal(true));
+  closeHowBtn?.addEventListener('click', () => openHowModal(false));
+  howModal?.addEventListener('click', (e) => {
+    const t = e.target;
+    if (!(t instanceof HTMLElement)) return;
+    if (t.dataset.close === 'true') openHowModal(false);
+  });
+
+}
+
+function openHowModal(on) {
+  openModal(howModal, on);
+}
+
+function initParticles() {
+  if (!particlesCanvas || isSmartphone) return;
+  const ctx = particlesCanvas.getContext('2d');
+  if (!ctx) return;
+
+  let w = 0, h = 0;
+  const dpr = Math.max(1, Math.min(1.5, window.devicePixelRatio || 1));
+  const COUNT = 96; // v2.1: 7000 -> 96, misma atmósfera con coste mínimo.
+  const particles = Array.from({ length: COUNT }, () => ({}));
+
+  const rand = (min, max) => min + Math.random() * (max - min);
+  function reset(p, anywhere=false) {
+    p.x = rand(0, w);
+    p.y = anywhere ? rand(0, h) : h + rand(8, 80);
+    p.r = rand(.8, 3.2);
+    p.vx = rand(-.10, .10);
+    p.vy = rand(-.22, -.06);
+    p.a = rand(.08, .28);
+  }
+  function resize() {
+    w = Math.floor(window.innerWidth);
+    h = Math.floor(window.innerHeight);
+    particlesCanvas.width = Math.floor(w * dpr);
+    particlesCanvas.height = Math.floor(h * dpr);
+    particlesCanvas.style.width = `${w}px`;
+    particlesCanvas.style.height = `${h}px`;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    particles.forEach((p) => reset(p, true));
+  }
+  resize();
+  window.addEventListener('resize', resize, { passive:true });
+
+  let last = 0;
+  function tick(ts) {
+    // Cap ~30fps: más que suficiente para polvo ambiental.
+    if (ts - last < 33) { requestAnimationFrame(tick); return; }
+    last = ts;
+    ctx.clearRect(0,0,w,h);
+    for (const p of particles) {
+      p.x += p.vx; p.y += p.vy;
+      if (p.y < -10 || p.x < -10 || p.x > w+10) reset(p, false);
+      ctx.globalAlpha = p.a;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(210,230,255,.9)';
+      ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+async function init() {
+  hud.classList.add('isLoading');
+  ready = false;
+  playing = false;
+  setStatus('');
+  setMenuStatus('Cargando…');
+  clearBoard();
+
+  try {
+    // v2.1: inventario fijo del ZIP real; cero barridos 001..300 / bg01..60 / audio01..99.
+    allImages = STATIC_STORY_IMAGES.slice();
+    availableBgs = STATIC_BACKGROUNDS.slice();
+    successSounds = STATIC_SUCCESS_SOUNDS.slice();
+    gameMusicTracks = STATIC_GAME_MUSIC.slice();
+
+    const img050 = allImages.find((s) => codeFromSrc(s) === '050') || null;
+    const others = allImages.filter((s) => codeFromSrc(s) !== '050');
+    // 049 posters aleatorios + 050 reservada como última recompensa.
+    const base = shuffle(others).slice(0, Math.min(MAX_IMAGES - (img050 ? 1 : 0), others.length));
+    gamePool = img050 ? [...base, img050] : base.slice(0, Math.min(MAX_IMAGES, base.length));
+    unlockedSet = new Set();
+    completedAll = false;
+    gameCompletedEventSent = false;
+    playing = false;
+    levelPools = chunk(gamePool.slice(0, LEVELS * PAIRS_PER_LEVEL), PAIRS_PER_LEVEL);
+
+    const shuffledBgs = shuffle(availableBgs);
+    levelBgs = Array.from({ length: LEVELS }, (_, i) => shuffledBgs[i % Math.max(1, shuffledBgs.length)] || null);
+
+    ready = true;
+    if (playBtn) playBtn.disabled = false;
+    if (muralBtn) muralBtn.disabled = false;
+    if (secretBtn) secretBtn.style.display = 'none';
+    setMenuStatus('MEMORY50 v2.1 · © Disturbing Stories 2026 / Vianda Visual');
+    hud.classList.remove('isLoading');
+
+    const bg0 = levelBgs[0];
+    if (bg0) document.documentElement.style.setProperty('--levelBg', `url('${bg0}')`);
+
+    // Mobile sigue siendo un contexto bloqueado; no levantamos partículas.
+    if (!isSmartphone) initParticles();
+    showIntroGate();
+  } catch (err) {
+    console.error(err);
+    setMenuStatus('Error cargando recursos.');
+    hud.classList.remove('isLoading');
+    showIntroGate();
+  }
+}
+
+wireEvents();
+init();
+
+    </script>
+  </body>
+</html>
